@@ -1,0 +1,498 @@
+\documentclass{article}
+
+% if you need to pass options to natbib, use, e.g.:
+%     \PassOptionsToPackage{numbers, compress}{natbib}
+% before loading neurips_2019
+
+% ready for submission
+% \usepackage{neurips_2019}
+
+% to compile a preprint version, e.g., for submission to arXiv, add add the
+% [preprint] option:
+%     \usepackage[preprint]{neurips_2019}
+
+% to compile a camera-ready version, add the [final] option, e.g.:
+\usepackage[nonatbib, final]{neurips_2019}
+     
+
+% to avoid loading the natbib package, add option nonatbib:
+%     \usepackage[nonatbib]{neurips_2019}
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage{subfig}
+
+\usepackage{cite}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\usepackage{caption} 
+\captionsetup[table]{skip=10pt}
+
+% Default fixed font does not support bold face
+\DeclareFixedFont{\ttb}{T1}{txtt}{bx}{n}{12} % for bold
+\DeclareFixedFont{\ttm}{T1}{txtt}{m}{n}{12}  % for normal
+
+% Custom colors
+\usepackage{color}
+\definecolor{deepblue}{rgb}{0,0,0.5}
+\definecolor{deepred}{rgb}{0.6,0,0}
+\definecolor{deepgreen}{rgb}{0,0.5,0}
+\definecolor{light-gray}{gray}{0.95}
+
+\usepackage{listings}
+% \usepackage{lmodern}  % for bold teletype font
+\usepackage{amsmath}  % for \hookrightarrow
+\usepackage{xcolor}   % for \textcolor
+
+% Python style for highlighting
+\newcommand\pythonstyle{\lstset{
+language=Python,
+% basicstyle=\tt,
+basicstyle=\ttfamily, columns=fullflexible,
+morekeywords={self},              % Add keywords here
+keywordstyle=\tt\color{deepblue},
+emph={MyClass,__init__,forward,ColumnParallelLinear,RowParallelLinear,ParallelSelfAttention,ParallelCrossEntropy,ParallelTransformerLayer,ParallelTransformer,GPT2, Embedding, ParallelMLP,VocabParallelEmbedding,Linear,Profiler},          % Custom highlighting
+emphstyle=\tt\color{deepred},    % Custom highlighting style
+stringstyle=\color{deepgreen},
+% frame=tb,  
+frame=none, % Any extra options here
+showstringspaces=false,
+breaklines=true,
+% ostbreak=\mbox{\textcolor{red}{$\hookrightarrow$}\space},
+belowskip=0em,
+backgroundcolor = \color{light-gray},
+% xleftmargin = .2em,
+% framexleftmargin = .2em
+}}
+
+
+% Python environment
+\lstnewenvironment{python}[1][]
+{
+\pythonstyle
+\lstset{#1}
+}
+{}
+
+% Python for external files
+\newcommand\pythonexternal[2][]{{
+\pythonstyle
+\lstinputlisting[#1]{#2}}}
+
+% Python for inline
+\newcommand\pyinline[1]{{\pythonstyle\lstinline!#1!}}
+
+
+\title{Graph Neural Networks For Recommender Systems}
+
+% The \author macro works with any number of authors. There are two commands
+% used to separate the names and addresses of multiple authors: \And and \AND.
+%
+% Using \And between authors leaves it to LaTeX to determine where to break the
+% lines. Using \AND forces a line break at that point. So, if LaTeX puts 3 of 4
+% authors names on the first line, and the last on the second line, try using
+% \AND instead of \And before the third author name.
+
+\author{
+  \textbf{Albert Liang}  \\
+  Carnegie Mellon University \\
+  \texttt{ajliang@cs.cmu.edu} \\
+  \And
+  \textbf{Tianyu Zhang} \\
+  Carnegie Mellon University \\
+  \texttt{tianyuz2@andrew.cmu.edu} \\
+  \And
+  \textbf{Hiroshi Wu} \\
+  Carnegie Mellon University \\
+  \texttt{bw1@cs.cmu.edu} \\
+}
+
+\begin{document}
+
+\maketitle
+
+% \begin{abstract}
+% sss
+% \end{abstract}
+
+
+\section{Introduction \& Motivation}
+
+Recommendation systems are deployed to serve personalized content that is interesting to each individual user on applications such as YouTube, Amazon, and UberEats. Modern recommendation systems leverage deep-learning-based models to better characterize user interests. Designing recommendation models has become an important problem in the machine learning field.
+
+While there are many sub-problems in this field, we focus on a specific task, rating prediction, in this project. In its most simplistic form, we can view this as a regression problem with two inputs $u,i$ and an output $r_{ui}$, where $u$ stands for a user, $i$ stands for an item, and $r_{ui}$ is how much the user likes the item, which is what we want to predict. We wish to learn a function $f(u,i)$ such that $\hat{r}_{ui}=f(u,i)$ is as close as possible to $r_{ui}$. Given the $r_{ui}$ values for a given $u$ and varying $i$, we are then able to rank them descending order to obtain items that will most likely interest the given user, and recommend those best-ranking items.
+
+Here we will use the \textbf{MovieLens 100K} \cite{movielens} dataset to train and evaluate our models. MovieLens is a series of datasets collected from the MovieLens website where users have rated movies on a rating scale of 1 to 5. These datasets are widely used as benchmark datasets for recommendation systems \cite{DBLP:journals/corr/abs-2011-02260}, making it great forr comparing our models to others. There are different sized MovieLens datasets, and we will use the smallest but most commonly used 100k dataset since it will train faster with limited hardware and have more comparisons available. Within the MovieLens framework, $u$ corresponds to users, $i$ corresponds to movies, and $r_{ui}$ corresponds to the rating that user $u$ gave to movie $i$, where $r_{ui}\in\{1,2,3,4,5\}$. Since the rating is a discrete but linear scale, we will evaluate the results using RMSE (root mean squared error) between the predicted rating $\hat{r}_{ui}$ and the ground truth rating $r_{ui}$.
+
+
+\section{Background \& Related Work}
+
+Recommendation systems have existed since computer systems that matched users to items existed, from around the 1990s. As the internet boomed in the 21st century, designing a good recommendation system has become more and more important, and significant research has been done in this area. 
+
+Some well-known traditional methods roughly categorize into user or item neighborhood-based methods, matrix-factorization-based methods, neural network-based methods, etc. One classic neighborhood method is collaborative filtering \cite{cf} where predictions about the interest of a user are made by collecting the preferences of many users. An instance of collaborative filtering is matrix factorization 
+\cite{mf}. Matrix factorization techniques work by decomposing a user-item interaction matrix into the product of two lower-dimensional matrices, essentially creating an embedding for users and items in lower-dimensional spaces. Recommendations then can be made by, e.g., querying the neighborhood of a user's embedding vector. Methods developed after MF expands on this key idea of embedding. Factorization machines \cite{fm} allows the incorporation of side features while creating the embeddings and deep learning methods, such as Wide \& Deep \cite{wideanddeep}, generalize and merge ideas from traditional methods while leveraging the power of deep neural nets.
+
+However, traditional methods are often limited in expressivity since the models are relatively simple, for example a single matrix. Neural networks by themselves also lack the structure needed to take advantage of the complex structure between user-item ratings and features. We hypothesize that the best of two worlds might be attainable using graph neural networks.
+
+Our dataset is inherently structured as a bipartite graph, with one half being the users and the other half being the items. Edges between these nodes thus corresponds to the ratings user gave to items. Each user and each item also have features assigned to them, which can also be represented in a graph neural network. Then the message passing and aggregation algorithms applied to this graph is a combination of both the traditional neighborhood method and a neural network. We hope to explore various types of message passing and aggregation algorithms, such as GraphSAGE \cite{graphsage}, to optimize them for rating prediction. The results will then be compared to baseline algorithms we will define.
+
+
+\section{Methods}
+
+\subsection{Baselines}
+
+TO DO: a more concise explanation of baselines
+
+% To benchmark the performance of our GNNs, we implemented a suite of baseline algorithms, including SVD, NMF, SlopeOne, k-NN, and Random Guessing. We measured their respective out-sample performance using a 5 fold cross validation. We fixed the random seed for all baseline algorithms so that they have the same partitioning for the 5 folds.
+
+% In sub-sections below, we would briefly summarize the mathematics and algorithms for each baseline. Since these baseline methods are not meant to be the focus of our project, we direct the readers to the original papers of these baseline methods if they are interested in more algorithmic details.
+
+% \subsubsection{Baseline 1: Singular Value Decomposition (SVD)}
+
+% The SVD algorithm predicts the rating $\hat{r}_{ui}$ of user $u$ on movie $i$ as follows
+% \begin{align*}
+%     \hat{r}_{ui} = \mu + b_u + b_i + q_i^\top p_u
+% \end{align*}
+% where $b_u, p_u$ and $b_i, q_i$ are the bias and factors of the user $u$ and movie $i$, respectively. $\mu$ is simply the intercept. For more details, see Section 4 of \cite{KBV09} and Section 5.3.1 of \cite{RRSK10}
+
+% The objective function used for fitting these parameters is the regularized squared error:
+% \begin{align*}
+%     \sum_{r_{ui} \in R_{train}} (r_{ui} - \hat{r}_{ui})^2 + \lambda (b_i^2 + b_u^2 + \parallel q_i \parallel^2 + \parallel p_u \parallel^2)
+% \end{align*}
+% where $r_{ui}$ is the ground truth and $\lambda$ is the regularization term.
+
+% Let $\hat{e}_{ui} := r_{ui} - \hat{r}_{ui}$ denote the residual error of the prediction $\hat{r}_{ui}$, then we can fit the SVD parameters using Stochastic Gradient Descent (SGD) via the update rule:
+% \begin{align*}
+%     \begin{cases}
+%     b_u \leftarrow b_u + \gamma (\hat{e}_{ui} - \lambda b_u) \\
+%     b_i \leftarrow b_i + \gamma (\hat{e}_{ui} - \lambda b_i) \\
+%     p_u \leftarrow p_u + \gamma (\hat{e}_{ui} q_i - \lambda p_u) \\
+%     q_i \leftarrow q_i + \gamma (\hat{e}_{ui} p_u - \lambda q_i)
+%     \end{cases}
+% \end{align*}
+% where $\gamma$ is our learning rate. \cite{surprise}
+
+% \subsubsection{Baseline 2: Non-negative Matrix Factorization (NMF)}
+
+% The NMF algorithm is very similar to the SVD algorithm. In particular, the predicted rating $\hat{r}_{ui}$ of user $u$ on movie $i$ in NMF is simply
+% \begin{align*}
+%     \hat{r}_{ui} = q_i^\top p_u
+% \end{align*}
+% where the user factor $p_u$ and the movie factor $q_i$ are constrained to be always positive \cite{surprise}. For the algorithmic details of how this is achieved and how the learning procedure ensures the positivity of the factors, see \cite{LZXZ14}, \cite{ZWFM96}, and \cite{LS01}.
+
+% % $q_i$ and $p_u$ are uniformly initialized to some positive values. Similar to SVD, we use SGD to iteratively update each entry in $q_i$ and $p_u$ as follows
+% % \begin{align*}
+% %     p_{uf} \leftarrow p_{uf} \cdot \frac{\sum_{i \in I_u} q_{if} \cdot r_{ui}}{\sum_{i \in I_u} q_{if} \cdot \hat{r}_{ui} + \lambda_u | I_u | p_{uf}}
+% % \end{align*}
+
+% \subsubsection{Baseline 3: Slope One}
+
+% The Slope One algorithm was proposed in \cite{LM07}. The algorithm predicts the rating $\hat{r}_{ui}$ of user $u$ on movie $i$ as
+% \begin{align*}
+%     \hat{r}_{ui} = \mu_u + \frac{1}{| R_i(u) |} \sum_{j \in R_i(u)} \text{dev}(i, j)
+% \end{align*}
+% where $R_i(u)$ is the set of movies $j$ rated by $u$ that also have at least one common user with $i$, and $\text{dev}(i, j)$ is the average difference between the ratings of $i$ and the ratings of $j$. Mathematically: \cite{surprise}
+% \begin{align*}
+%     \text{dev}(i, j) = \frac{1}{| U_{ij} |} \sum_{u \in U_{ij}} r_{ui} - r_{uj}
+% \end{align*}
+
+% \subsubsection{Baseline 4: k Nearest Neighbors (k-NN)}
+
+% The k-NN algorithm predicts the rating $\hat{r}_{ui}$ of user $u$ on movie $i$ as
+% \begin{align*}
+%     \hat{r}_{ui} = \frac{\sum_{v \in N_i^k(u)} \text{sim}(u, v) \cdot r_{vi}}{ \sum_{v \in N_i^k(u)} \text{sim}(u, v) }
+% \end{align*}
+% where $\text{sim}(u, v)$ is the Mean Square Difference (MSD) between user $u$ and user $v$. \cite{surprise}
+
+% \subsubsection{Baseline 5: Random Guessing}
+
+% Finally, we also included a dummy algorithm that randomly predicts the user ratings based on the distribution of the training set, which we assume to be normal. In particular, the prediction $\hat{r}_{ui}$ is sampled from $N(\hat{\mu}, \hat{\sigma}^2)$, where $\hat{\mu}$ and $\hat{\sigma}^2$ are the Maximum Likelihood Estimates (MLE) of the training set \cite{surprise}.
+% \begin{align*}
+%     \hat{\mu} &= \frac{1}{| R_{train} |} \sum_{r_{ui} \in R_{train}} r_ui &
+%     \hat{\sigma} &= \sqrt{\sum_{r_{ui} \in R_{train}} \frac{(r_{ui} - \hat{\mu})^2}{| R_{train} |}}
+% \end{align*}
+
+\subsection{Graph Neural Network (GNN)}
+
+\textit{By the final report, we expect you to have implemented your own ideas beyond the baseline. Additionally, you should describe what work you have completed towards creating a method which beats the
+baseline. In addition to successful approaches, you should briefly detail approaches which you tried and found to not work well. What methods have you completed? What is your motivation behind these techniques (you are encouraged to come up with an original idea of your own or interesting applications rather than simply implementing or applying existing ML algorithms)?}
+
+\subsubsection{Overview of Graph Neural Networks}
+
+TO DO: talk about the overall structure of a GNN here, i.e. the 3 components
+
+\subsubsection{Neighborhood Aggregation (Tianyu)}
+
+TO DO: Explain LightGCN AGG and Attention AGG here
+
+\subsubsection{Information Update (Albert)}
+
+TO DO: Explain LightGCN Info Update and Linear Info Update here
+
+\subsection{Final Node Representation (Hiroshi)}
+
+TO DO: Explain LightGCN Final Node Rep and Concat Final Node Rep here.
+
+\subsection{GNN 1: LightGCN}
+
+The LightGCN model was originally proposed in \cite{lightgcn} to simplify the design of Neural Graph Collaborative Filtering (NGCF), which was proposed earlier in \cite{ngcf}. Specifically, it includes only the most essential components in NGCF -- neighborhood aggregation -- for collaborative filtering. Due to its simplicity, we decided to implement it as our first GNN and adapt it to the MovieLens dataset.
+
+\subsubsection{LightGCN: Model Definition}
+
+LightGCN learns the embeddings for the users and movies by iteratively applying graph convolution on the user-item interaction graph, as depicted in Figure \ref{fig:user-item-interact-graph}. Note that the user-item interaction graph is assume to be bipartite, so the user embeddings are updated only using the movies embeddings and vice versa.
+
+Figure \ref{fig:light-gcn-architecture} summarizes the overall model architecture of LightGCN. In the sections below, we describe each component of this architecture in detail and also present a mathematical overview of the model training procedure.
+
+\textbf{Light Graph Convolution (LGC)}
+
+In contrast to NGCF, the graph convolution operation in LightGCN is just a simple weighted sum aggregator, abandoning the use of feature transformation and nonlinear activation. Mathematically, the graph convolution operation is defined as:
+\begin{align*}
+    \mathbf{e}_u^{(k+1)} = \sum_{i \in \mathcal{N}_u} \frac{\mathbf{e}_i^{(k)}}{\sqrt{| \mathcal{N}_u | | \mathcal{N}_i | }} \\
+    \mathbf{e}_i^{(k+1)} = \sum_{u \in \mathcal{N}_i} \frac{\mathbf{e}_u^{(k)}}{\sqrt{| \mathcal{N}_i | | \mathcal{N}_u | }}
+\end{align*}
+where the normalization term $\frac{1}{\sqrt{|\mathcal{N}_i| |\mathcal{N}_u|}}$ helps avoid increasing the scale of the embeddings with more graph convolution operations. \cite{lightgcn}
+
+\textbf{Layer Combination (Weighted Sum)}
+
+After $K$ layers of graph convolutions, the final user/movie embedding is obtained as a weighted average of the embeddings from layers $0$ through $K$:
+\begin{align*}
+    \mathbf{e}_u = \sum_{k = 0}^K \alpha_k \mathbf{e}_u^{(k)} \\
+    \mathbf{e}_i = \sum_{k = 0}^K \alpha_k \mathbf{e}_i^{(k)}
+\end{align*}
+where $\alpha_k \geq 0$ is the weight assigned to the embedding from each layer. In \cite{lightgcn}, the authors found that setting $\alpha_k \sim \mbox{Uniform}(0, \frac{1}{K + 1})$ achieves good performance, so we will set $\alpha_k \sim \mbox{Uniform}(0, \frac{1}{K+1})$ in our implementation as well.
+
+\textbf{Ranking Score Prediction}
+
+With the final learned embeddings for the users and the movies, LightGCN predicts the ranking score \cite{lightgcn} for recommending movie $i$ to user $u$ as simply their inner product:
+\begin{align*}
+    \hat{y}_{ui} = \mathbf{e}_u^\top \mathbf{e}_i
+\end{align*}
+
+\textbf{Loss Function}
+
+In \cite{lightgcn}, the authors train LightGCN using the Bayesian Personalized Ranking (BPR) loss:
+\begin{align*}
+    L_{\mbox{BPR}} = - \sum_{u = 1}^M \sum_{i \in \mathcal{N}_u} \sum_{j \notin \mathcal{N}_u} \ln \sigma(\hat{y}_{ui} - \hat{y}_{uj}) + \lambda \| \mathbf{E}^{(0)} \|^2
+\end{align*}
+where $\lambda$ is a tuning parameter for the $L_2$ regularization. Intuitively, BPR is a pairwise loss that encourages the prediction of an observed entry to be higher than its unobserved counterparts. In our implementation, we employ the BPR loss function in conjunction with the Adam \cite{adam} optimizer.
+
+\textbf{Mathematical Overview of the Training Procedure} \cite{lightgcn}
+
+Notice that the only learnable parameter in LightGCN is the initial user/movie embeddings $\mathbf{E}^{(0)} \in \mathbb{R}^{(M + N) \times T}$. Here, $M$, $N$, and $T$ denotes the number of users, the number of movies, and the embedding size respectively. Since each graph convolution is just a linear transformation of the previous layer, we can derive a closed form solution of the final embeddings $\mathbf{E}$ in terms of the initial embeddings $\mathbf{E}^{(0)}$.
+
+Let $\mathbf{R} \in \mathbb{R}^{M \times N}$ denote the interaction matrix where $\mathbf{R}_{ui}$ is 1 if user $u$ has a rating for movie $i$ and 0 otherwise. Then, we know the adjacency matrix of the bipartite user-movie interaction graph is
+\begin{align*}
+    \mathbf{A} =
+    \begin{pmatrix}
+    \mathbf{0} & \mathbf{R} \\
+    \mathbf{R}^\top & \mathbf{0}
+    \end{pmatrix}
+\end{align*}
+
+Treating this as a classical matrix factorization problem, we arrive at the propagation rule:
+\begin{align*}
+    \mathbf{E}^{(k+1)} = \left( \mathbf{D}^{-\frac{1}{2}} \mathbf{A} \mathbf{D}^{-\frac{1}{2}} \right) \mathbf{E}^{(k)}
+\end{align*}
+where $\mathbf{D} \in \mathbb{R}^{(M + N) \times (M + N)}$ is a diagonal matrix such that the $i$th diagonal entry denotes the number of non-zero entries in the $i$th row of $\mathbf{A}$. Denote $\mathbf{\tilde{A}} := \mathbf{D}^{-\frac{1}{2}} \mathbf{A} \mathbf{D}^{-\frac{1}{2}}$, we conclude that
+\begin{align*}
+\mathbf{E} &= \alpha_0 \mathbf{E}^{(0)} + \alpha_1 \mathbf{E}^{(1)} + \alpha_2 \mathbf{E}^{(2)} + \hdots + \alpha_K \mathbf{E}^{(K)} \\
+&= \alpha_0 \mathbf{E}^{(0)} + \alpha_1 \mathbf{\tilde{A}} \mathbf{E}^{(0)} + \alpha_2 \mathbf{\tilde{A}}^2 \mathbf{E}^{(0)} + \hdots + \alpha_K \mathbf{\tilde{A}}^K \mathbf{E}^{(0)}
+\end{align*}
+is the closed form solution of the final embeddings $\mathbf{E}$, which we can then feed into the BPR loss function by generating the ranking score predictions.
+
+\subsubsection{GNN 2: <Hiroshi's GNN>}
+
+TBD
+
+\subsubsection{GNN 3: TZ's GNN}
+
+TBD
+
+\section{Results, Discussion, and Analysis}
+
+\textit{Your experimental results. Show plots of the performance of your algorithms and interpret what they mean. Be sure to label and explain this clearly. Describe how the current results in each of the experiments align with your expectations. What metrics did you use for evaluation? How do your results compare to prior work?}
+
+\textit{Analyze your model and results. Highlight a few limitations of your approach (e.g., strong assumptions you had to make, constraints, when your method did not work in practice, etc.). Do
+the results and the explanation provide insights into the ML models or the environment that you were dealing with? Comment on whether you think there is a way to further improve your method to eliminate these limitations.}
+
+\subsection{LightGCN: Model Performance Evaluation} \label{lightgcn-eval}
+
+To evaluate the performance of LightGCN and benchmark it against the baselines, we employ the following rank-based metrics
+$$
+\begin{cases}
+\text{Mean Average Precision (MAP) @ K} \\
+\text{Normalized Discounted Cumulative Gain (nDCG) @ K} \\
+\text{Precision @ K} \\
+\text{Recall @ K}
+\end{cases}
+$$
+For a detailed definition of these metrics, we direct the reader to \cite{metrics}.
+
+Table \ref{tab:lightgcn-100k-results} summarizes the rank-based metrics for LightGCN as well as the baseline models, which were all trained on the \texttt{MovieLens 100K} dataset. In addition, These results are visualized in Figure \ref{fig:lightgcn-100k-eval}.
+
+As shown in Figure \ref{fig:lightgcn-100k-eval}, our LightGCN model significantly outperformed all baseline models without even using any complicated non-linear feature transformation. For example, the MAP @ K and Recall @ K of LightGCN are almost two times better than the baselines.
+
+We believe the main factor that contributed to the success of LightGCN is that it systematically learns the multi-hop relationships in the user-movie interaction graph, which is not utilized by the baseline methods.
+
+ TO DO: Highlight a few limitations of LightGCN, which could be a nice segway into our next GNN that potentially improves upon LightGCN.
+
+% \textbf{Precision @ K}
+
+% The ``Precision @ K" metric for a recommender model is defined as the proportion of the top K ranks that were correctly predicted. Mathematically, let $R_{u}$ denote the true ranking of user $u$ for her top $K$ favorite movies, and let $\hat{R}_u$ denote the corresponding top-K ranking predicted by the recommender model. Then, its ``Precision @ K" score is
+% \begin{align*}
+%     \text{Precision @ K} = \frac{1}{M} \sum_{u = 1}^M \frac{1}{K} \sum_{r = 1}^k \delta(R_u[r] = \hat{R}_u[r])
+% \end{align*}
+% where $\delta(\cdot)$ is the indicator function.
+
+% \textbf{Mean Average Precision @ K}
+
+% The ``Mean Average Precision @ K" metric is simply the average of ``Precision @ k" over $k = 1, 2, \hdots, K$. Mathematically, MAP @ K is defined as
+% \begin{align*}
+%     \text{MAP @ K} = \frac{1}{K} \sum_{k = 1}^K \text{Prediction @ $k$}
+% \end{align*}
+
+\subsection{<Hiroshi GNN>: Model Performance Evaluation}
+
+\subsection{<Tianyu GNN>: Model Performance Evaluation}
+
+
+
+% Table \ref{tab:rmse_results}, \ref{tab:mae_results} show the 5-fold cross-validation RMSE and MAE of the baseline algorithms, respectively. Figure \ref{fig:rmse-baselines}, \ref{fig:mae-baselines} plots the mean RMSE and MAE against the baseline algorithms, respectively.
+
+% % \section{Evaluation of Preliminary Work}
+
+% From Figure \ref{fig:rmse-baselines} and \ref{fig:mae-baselines}, we see that all four non-trivial baselines beat Random Guess by a large margin. Among them, SVD performs the best in both RMSE and MAE, followed by SlopeOne, NMF, and then k-NN. We note that the different methods do provide non-trivial improvements to the metrics, suggesting there is still room for improvement by employing more sophisticated algorithms, such as GNN.
+
+% \section{Next Steps}
+
+% For our next steps, we would like to further review the literature of neural network in recommendation systems, especially the use of graph neural networks, and start implementing many of them. Starting from basic GNNs such as GraphSAGE \cite{graphsage}, GGNN \cite{ggnn} and GAT \cite{gat}, we plan to experiment with different aspects of the networks such as neighborhood depth, graph structure, etc. We will devise architectures that train GNN together with traditional networks in an end-to-end manner and run ablation experiments to study the additional benefits GNN brings to solving the task. We hope to run these on the same dataset with the same benchmarking and produce better results than the baseline. We will also try these on a bigger dataset like MovieLens1M or MovieLens20M to see if this affects the accuracy of the baseline vs GNN results.
+
+\section{Teammates and Work Division}
+
+% For the rest of the work, we each will first implement a GNN, e.g. GraphSAGE for Albert, GGNN for Hiroshi, and GAT for Tianyu, and evaluate their performance in similar methods as above. This will be done by Nov 11. Then, we individually will explore ways to integrate GNN into traditional neural nets to create more complex architectures that potentially perform better and offers opportunities for more sophisticated analyses (e.g. an ablation study by toggling the GNN module in the whole net on and off). This will be done by Dec 2. We will work on the final draft in the last week leading to Dec 8, the submission deadline.
+
+\section{Access to Code}
+
+\textit{If relevant to your project, you must provide a link to a Github repository which contains all code used in your project. The repository should contain a README file which explains how to run your code and it should provide a link to your dataset used so that TAs can replicate your work.}
+
+\newpage
+
+\section{Appendix}
+
+\begin{table}[H]
+    \centering
+        \begin{tabular}{|c c c c c c c|} 
+         \hline
+         Baseline & Fold 1 & Fold 2 & Fold 3 & Fold 4 & Fold 5 & Mean \\ [0.5ex] 
+         \hline\hline
+         SVD & 0.935 & 0.928 & 0.931 & 0.932 & 0.946 & \bfseries 0.934 \\ 
+         \hline
+         NMF & 0.964 & 0.962 & 0.957 & 0.961 & 0.973 & 0.963 \\
+         \hline
+         SlopeOne & 0.947 & 0.941 & 0.941 & 0.942 & 0.958 & 0.946 \\
+         \hline
+         k-NN & 0.984 & 0.975 & 0.976 & 0.975 & 0.987 & 0.980 \\
+         \hline
+         Random Guess & 1.514 & 1.519 & 1.524 & 1.509 & 1.524 & 1.518 \\ [1ex] 
+         \hline
+        \end{tabular}
+    \caption{5 Fold Cross Validation RMSE of Baseline Algorithms}
+    \label{tab:rmse_results}
+\end{table}
+
+\begin{table}[H]
+    \centering
+        \begin{tabular}{|c c c c c c c|} 
+         \hline
+         Baseline & Fold 1 & Fold 2 & Fold 3 & Fold 4 & Fold 5 & Mean \\ [0.5ex] 
+         \hline\hline
+         SVD & 0.737 & 0.731 & 0.735 & 0.734 & 0.747 & \bfseries 0.737 \\ 
+         \hline
+         NMF & 0.759 & 0.758 & 0.754 & 0.754 & 0.765 & 0.758 \\
+         \hline
+         SlopeOne & 0.744 & 0.740 & 0.740 & 0.740 & 0.753 & 0.743 \\
+         \hline
+         k-NN & 0.776 & 0.771 & 0.770 & 0.769 & 0.782 & 0.774 \\
+         \hline
+         Random Guess & 1.215 & 1.221 & 1.225 & 1.210 & 1.223 & 1.219 \\ [1ex] 
+         \hline
+        \end{tabular}
+    \caption{5 Fold Cross Validation MAE of Baseline Algorithms}
+    \label{tab:mae_results}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.8\textwidth]{figs/rmse-baselines.png}
+    \caption{5 Fold Cross Validation: Mean RMSE v.s. Baselines}
+    \label{fig:rmse-baselines}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.8\textwidth]{figs/mae-baselines.png}
+    \caption{5 Fold Cross Validation: Mean MAE v.s. Baselines}
+    \label{fig:mae-baselines}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=.8\textwidth]{figs/light-gcn-architecture.png}
+    \caption{An illustration of the LightGCN architecture from \cite{lightgcn}. In LightGCN, the current layer only passes the normalized sum of the neighbor embeddings to the next layer. LightGCN throws away all other operations such as self-connection, feature transformation, and non-linear activation that are commonly seen in GCN. At the layer combination stage, LightGCN computes the final embedding as the weighted average of the embeddings at each layer}
+    \label{fig:light-gcn-architecture}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=.8\textwidth]{figs/ngcf-architecture.png}
+    \caption{An illustration of the user-item interaction graph and the high-order connectivity from \cite{ngcf}. The figure shows how the embeddings for user $u_1$ are propagated through the graph. The LightGCN model is based on this same user-item interaction graph.}
+    \label{fig:user-item-interact-graph}
+\end{figure}
+
+\begin{table}[H]
+    \centering
+        \begin{tabular}{|c c c c c|} 
+         \hline
+         Model & MAP & nDGC & Precision @ K & Recall @ K \\ [0.5ex] 
+         \hline\hline
+         LightGCN & 0.034 & 0.153 & 0.145 & 0.093 \\ 
+         \hline
+         SVD & 0.016 & 0.095 & 0.087 & 0.037 \\
+         \hline
+         NMF & 0.002 & 0.024 & 0.025 & 0.010 \\ 
+         \hline
+         SlopeOne & 0.001 & 0.010 & 0.012 & 0.003 \\ 
+         \hline
+         k-NN & 0.012 & 0.073 & 0.084 & 0.049 \\ 
+         \hline 
+         NormalPredictor & 0.001 & 0.013 & 0.014 & 0.004 \\[1ex] 
+         \hline
+        \end{tabular}
+    \title{sdas}
+    \caption{Rank-based Evaluation Metrics of LightGCN and Baselines trained on the \texttt{movielens-100K} dataset. MAP refers to Mean Average Precision. nDGC refers to Normalized Discounted Cumulative Gain. For a detailed definition of these metrics, see \cite{metrics}}
+    \label{tab:lightgcn-100k-results}
+\end{table}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=.8\textwidth]{figs/lightgcn-movielens100k-eval.png}
+    \caption{A visualization of the results from Table \ref{tab:lightgcn-100k-results}.}
+    \label{fig:lightgcn-100k-eval}
+\end{figure}
+
+\pagebreak
+
+\bibliography{references}{}
+\bibliographystyle{plain}
+
+\end{document}
