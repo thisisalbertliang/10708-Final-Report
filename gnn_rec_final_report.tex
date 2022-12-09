@@ -149,7 +149,7 @@ Our dataset is inherently structured as a bipartite graph, with one half being t
 
 \section{Methods}
 
-\subsection{Baselines}
+\subsection{Baselines} \label{baselines}
 
 TO DO: a more concise explanation of baselines
 
@@ -227,15 +227,38 @@ TO DO: a more concise explanation of baselines
 \textit{By the final report, we expect you to have implemented your own ideas beyond the baseline. Additionally, you should describe what work you have completed towards creating a method which beats the
 baseline. In addition to successful approaches, you should briefly detail approaches which you tried and found to not work well. What methods have you completed? What is your motivation behind these techniques (you are encouraged to come up with an original idea of your own or interesting applications rather than simply implementing or applying existing ML algorithms)?}
 
-\subsubsection{Overview of Graph Neural Networks}
+\subsubsection{Overview of Graph Neural Networks (Albert)}
 
 TO DO: talk about the overall structure of a GNN here, i.e. the 3 components
+
+A graph neural network (GNN) is a special class of deep learning models that is design to operate on graph-structured data. Recently, GNNs have been shown to be effective for a wide range of recommendation tasks \cite{survey}. In the context of recommender systems, the main idea behind a GNN is to represent the user-item rating data as a graph and then exploit the graph-based structures to make more accurate predictions about which which items a user might be interested in. This is different from the baseline methods that are introduced in Section \ref{baselines}, which do not explicitly use the graph structure of the user-item rating data.
+
+There are many different types of GNNs in the recommender systems world. \cite{survey} proposed a taxonomy to classify existing GNNs into roughly 4 types:
+
+\begin{itemize}
+    \item \textbf{User-item collaborative filtering}, where a GNN is used to model the relationships between users and items in order to make recommendations based on the preferences of similar users.
+    \item \textbf{Sequential recommendation}, where a GNN is used to model the sequence of items that a user has interacted with in the past, in order to make recommendations based on their previous behavior.
+    \item \textbf{Social recommendation}, where a GNN is used to model the social relationships between users, in order to make recommendations based on the preferences of friends or other users in a user's social network.
+    \item \textbf{Knowledge graph-based recommendation}, where a GNN is used to model the relationships between entities in a knowledge graph, in order to make recommendations based on the structure of the knowledge graph.
+\end{itemize}
+
+In this project, we would focus on GNNs for user-item collaborative filtering. In our view, collaborative filtering based GNN typically consists of 3 main components:
+
+\begin{itemize}
+    \item \textbf{Neighborhood Aggregation}. This step learns how to aggregate information from neighbor nodes. For example, one could compute the weighted sum of the embeddings of the neighbors of a given node, where the weights are learned by the GNN. The output from this step can be thought of as the aggregated representation of the neighbors.
+    \item \textbf{Information Update}. This step learns how to combine the aggregated representation of the neighbor embeddings with the current embeddings in order to create the next embedding for a given node. For example, one may use a simple element-wise addition to combine the output from the neighborhood aggregation step with the current embeddings.
+    \item \textbf{Final Node Representation}. This step combines all previous embeddings (i.e. every layer) into a single, final embedding for each node. For example, one could concatenate together the embeddings from every layer. Once the final node representation is computed, it is used as input to a prediction model.
+\end{itemize}
+
+In the following section, we separately explore different algorithms and implementations for each of these 3 components. Each combination of a Neighborhood Aggregation algorithm, an Information Update algorithm, and a Final Node Representation algorithm would yield a different GNN. We experimented and evaluated the recommendation performance for every possible GNN given our algorithms for the 3 components. The results are presented in Section \ref{results}.
 
 \subsubsection{Neighborhood Aggregation (Tianyu)}
 
 TO DO: Explain LightGCN AGG and Attention AGG here
 
 \subsubsection{Information Update (Albert)}
+
+For the Information Update module, we implemented
 
 TO DO: Explain LightGCN Info Update and Linear Info Update here
 
@@ -318,7 +341,7 @@ TBD
 
 TBD
 
-\section{Results, Discussion, and Analysis}
+\section{Results, Discussion, and Analysis} \label{results}
 
 \textit{Your experimental results. Show plots of the performance of your algorithms and interpret what they mean. Be sure to label and explain this clearly. Describe how the current results in each of the experiments align with your expectations. What metrics did you use for evaluation? How do your results compare to prior work?}
 
