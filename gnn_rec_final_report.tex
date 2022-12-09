@@ -252,19 +252,63 @@ In this project, we would focus on GNNs for user-item collaborative filtering. I
 
 In the following section, we separately explore different algorithms and implementations for each of these 3 components. Each combination of a Neighborhood Aggregation algorithm, an Information Update algorithm, and a Final Node Representation algorithm would yield a different GNN. We experimented and evaluated the recommendation performance for every possible GNN given our algorithms for the 3 components. The results are presented in Section \ref{results}.
 
-\subsubsection{Neighborhood Aggregation (Tianyu)}
+\subsubsection{Neighborhood Aggregation}
 
-TO DO: Explain LightGCN AGG and Attention AGG here
+We adopted two mechanisms to aggregate node information to compute embedding of a given layer. 
+\begin{itemize}
+    \item \textbf{Weighted Sum}, which is a simple weighted sum aggregator defined as: $$n_u^{(l)}=\sum_{i\in \mathcal{N}_u} \frac{1}{\sqrt{|\mathcal{N}_u|} \sqrt{|\mathcal{N}_i|}} h_i^{(l)}$$
+    where $\frac{1}{\sqrt{|\mathcal{N}_u|} \sqrt{|\mathcal{N}_i|}}$ is the normalizing factor that adjusts the scale of embeddings based on graph connectivity, which is known as the renormalization trick proposed by GCN \cite{gcn}.
+
+    \item \textbf{Attention}, which uses the attention mechanism to compute weights for each node. Specifically, we add a graph attention layer that borrows its design from GAT \cite{gat}. 
+    
+    The graph attention layer is parametrized by a weight matrix $W \in \mathbb{R}^{F' \times F}$ where $F, F'$ are input and output feature dimensions, respectively, and a shared set of attention weights that perform self-attention on the nodes $a \in \mathbb{R}^{2F'}$. 
+
+    Concretely, the attention weights between node $u$ and $i$ is $$\alpha_{ui} = \text{softmax} (e_{ui}) = \frac{\text{exp}(\text{LeakyReLU} (a^T [Wh_u || Wh_i]) )}{\sum_{j\in \mathcal{N}_u}  \text{exp}(\text{LeakyReLU} (a^T [Wh_u || Wh_j]) )}$$
+    where $||$ is the concatenation operator. Note that the above equation incorporates graph connectivity information by performing masked attention, i.e. we only compute $e_{ui}$ for nodes $i\in \mathcal{N}_u$. We temporarily dropped the ${(l)}$ superscript for notational simplicity as everything in scope here occurs on the same layer.
+
+    Now with the attention weights, we compute the final embedding as follows: $$n_u^{(l)} = \sigma ( \sum_{i\in \mathcal{N}_u} \alpha_{ui} W h_i^{(l)}  )$$ where we chose the nonlineariy $\sigma$ to be the Exponential Linear Function (ELU).
+\end{itemize}
 
 \subsubsection{Information Update (Albert)}
 
-For the Information Update module, we implemented
+For the Information Update module, we implemented three different algorithms:
+\begin{itemize}
+    \item \textbf{Multiple Linear}, which computes the next embedding for a given node as a push-forward of the aggregated neighbor embeddings through a linear layer activated by LeakyRelu. Mathematically, this is defined as:
+    $$
+    h_u^{(l+1)} = \mbox{LeakyRelu}(n_u^{(l)} W^{(l)} + b^{(l)}) \text{ for } l \in 0, 1, ..., K
+    $$
+    where $n_u^{(l)}$ and $h_u^{(l+1)}$ are the aggregated neighbor embeddings and the next embedding for node $u$ at layer $l$, respectively. $W^{(l)}$ and $b^{(l)}$ are the weight and bias parameters for the linear layer at layer $l$, respectively.
+    \item \textbf{Single Linear}, which is the same as \textit{Multiple Linear} except that the same LeakyRelu activated linear layer is shared among all layers. Mathematically, this is defined as:
+    $$
+    h_u^{(l+1)} = \mbox{LeakyRelu}(n_u^{(l)} W + b) \text{ for } l \in 0, 1, ..., K
+    $$
+    Notice that the same $W$ and $b$ are used for all layers.
+    \item \textbf{Identity}, which simply sets the next embedding for a given node to be its aggregated neighbor embeddings. Mathematically, this is defined as:
+    $$
+    h_u^{(l+1)} = n_u^{(l)} \text{ for } l \in 0, 1, ..., K
+    $$
+\end{itemize}
 
-TO DO: Explain LightGCN Info Update and Linear Info Update here
-
-\subsection{Final Node Representation (Hiroshi)}
+\subsection{Final Node Representation (Hiroshi)} \label{final_node_representation}
 
 TO DO: Explain LightGCN Final Node Rep and Concat Final Node Rep here.
+
+\subsection{Ranking Score Prediction}
+
+With the final learned embeddings outputed from the final node representation (defined in Section \ref{final_node_representation}) for the users and the movies, our GNN predicts the ranking score for recommending movie $i$ to user $u$ as simply their inner product:
+\begin{align*}
+    \hat{y}_{ui} = \mathbf{e}_u^\top \mathbf{e}_i
+\end{align*}
+
+\textbf{Loss Function}
+
+In \cite{lightgcn}, the authors train LightGCN using the Bayesian Personalized Ranking (BPR) loss:
+
+In \cite{lightgcn}, the authors 
+\begin{align*}
+    L_{\mbox{BPR}} = - \sum_{u = 1}^M \sum_{i \in \mathcal{N}_u} \sum_{j \notin \mathcal{N}_u} \ln \sigma(\hat{y}_{ui} - \hat{y}_{uj}) + \lambda \| \mathbf{E}^{(0)} \|^2
+\end{align*}
+where $\lambda$ is a tuning parameter for the $L_2$ regularization. Intuitively, BPR is a pairwise loss that encourages the prediction of an observed entry to be higher than its unobserved counterparts. In our implementation, we employ the BPR loss function in conjunction with the Adam \cite{adam} optimizer.
 
 \subsection{GNN 1: LightGCN}
 
