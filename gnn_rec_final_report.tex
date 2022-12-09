@@ -256,9 +256,23 @@ In the following section, we separately explore different algorithms and impleme
 
 We adopted two mechanisms to aggregate node information to compute embedding of a given layer. 
 \begin{itemize}
-    \item \textbf{Weighted Sum}, which is a simple weighted sum aggregator defined as: $$n_u^{(l)}=\sum_{i\in \mathcal{N}_u} \frac{1}{\sqrt{|\mathcal{N}_u|} \sqrt{|\mathcal{N}_i|}} h_i^{(l)}$$
+    \item \textbf{Weighted Sum}, which is a simple weighted sum aggregator defined as: $$n_u^{(l+1)}=\sum_{i\in \mathcal{N}_u} \frac{1}{\sqrt{|\mathcal{N}_u|} \sqrt{|\mathcal{N}_i|}} h_i^{(l)} \text{ for } l \in 0, 1, \hdots, K - 1$$
     where $\frac{1}{\sqrt{|\mathcal{N}_u|} \sqrt{|\mathcal{N}_i|}}$ is the normalizing factor that adjusts the scale of embeddings based on graph connectivity, which is known as the renormalization trick proposed by GCN \cite{gcn}.
 
+    Notice that in this setting, the neighborhood aggregation function is just a linear transformation of the previous layer. Therefore, we can derive a closed form solution of the aggregated representation in terms of the previous layer in matrix notation, which is significantly faster to compute compared to the naive implementation of the weighted sum as a for loop. Specifically, let $\mathbf{R} \in \mathbb{R}^{M \times N}$ denote the interaction matrix where $\mathbf{R}_{ui}$ is 1 if user $u$ has a rating for movie $i$ and 0 otherwise. Here $M$ and $N$ are the number of users and movies respectively. Then, the adjacency matrix of the bipartite user-movie interaction graph can be written as
+    \begin{align*}
+        \mathbf{A} =
+        \begin{pmatrix}
+        \mathbf{0} & \mathbf{R} \\
+        \mathbf{R}^\top & \mathbf{0}
+        \end{pmatrix}
+    \end{align*}
+    Treating this as a classical matrix factorization problem, we arrive at the closed form solution of the aggregation representation:
+    \begin{align*}
+        \mathbf{n}^{(l+1)} = \left( \mathbf{D}^{-\frac{1}{2}} \mathbf{A} \mathbf{D}^{-\frac{1}{2}} \right) \mathbf{H}^{(l)} \text{ for } l \in 0, 1, \hdot, K - 1
+    \end{align*}
+    where $\mathbf{D} \in \mathbb{R}^{(M + N) \times (M + N)}$ is a diagonal matrix such that the $i$th diagonal entry denotes the number of non-zero entries in the $i$th row of $\mathbf{A}$.
+    
     \item \textbf{Attention}, which uses the attention mechanism to compute weights for each node. Specifically, we add a graph attention layer that borrows its design from GAT \cite{gat}. 
     
     The graph attention layer is parametrized by a weight matrix $W \in \mathbb{R}^{F' \times F}$ where $F, F'$ are input and output feature dimensions, respectively, and a shared set of attention weights that perform self-attention on the nodes $a \in \mathbb{R}^{2F'}$. 
@@ -266,7 +280,7 @@ We adopted two mechanisms to aggregate node information to compute embedding of 
     Concretely, the attention weights between node $u$ and $i$ is $$\alpha_{ui} = \text{softmax} (e_{ui}) = \frac{\text{exp}(\text{LeakyReLU} (a^T [Wh_u || Wh_i]) )}{\sum_{j\in \mathcal{N}_u}  \text{exp}(\text{LeakyReLU} (a^T [Wh_u || Wh_j]) )}$$
     where $||$ is the concatenation operator. Note that the above equation incorporates graph connectivity information by performing masked attention, i.e. we only compute $e_{ui}$ for nodes $i\in \mathcal{N}_u$. We temporarily dropped the ${(l)}$ superscript for notational simplicity as everything in scope here occurs on the same layer.
 
-    Now with the attention weights, we compute the final embedding as follows: $$n_u^{(l)} = \sigma ( \sum_{i\in \mathcal{N}_u} \alpha_{ui} W h_i^{(l)}  )$$ where we chose the nonlineariy $\sigma$ to be the Exponential Linear Function (ELU).
+    Now with the attention weights, we compute the final embedding as follows: $$n_u^{(l + 1)} = \sigma ( \sum_{i\in \mathcal{N}_u} \alpha_{ui} W h_i^{(l)}  ) \text{ for } l \in 0, 1, \hdots, K - 1 $$ where we chose the nonlineariy $\sigma$ to be the Exponential Linear Function (ELU).
 \end{itemize}
 
 \subsubsection{Information Update (Albert)}
@@ -280,18 +294,33 @@ For the Information Update module, we implemented three different algorithms:
     where $n_u^{(l)}$ and $h_u^{(l+1)}$ are the aggregated neighbor embeddings and the next embedding for node $u$ at layer $l$, respectively. $W^{(l)}$ and $b^{(l)}$ are the weight and bias parameters for the linear layer at layer $l$, respectively.
     \item \textbf{Single Linear}, which is the same as \textit{Multiple Linear} except that the same LeakyRelu activated linear layer is shared among all layers. Mathematically, this is defined as:
     $$
-    h_u^{(l+1)} = \mbox{LeakyRelu}(n_u^{(l)} W + b) \text{ for } l \in 0, 1, ..., K
+    h_u^{(l+1)} = \mbox{LeakyRelu}(n_u^{(l)} W + b) \text{ for } l \in 0, 1, ..., K - 1
     $$
     Notice that the same $W$ and $b$ are used for all layers.
     \item \textbf{Identity}, which simply sets the next embedding for a given node to be its aggregated neighbor embeddings. Mathematically, this is defined as:
     $$
-    h_u^{(l+1)} = n_u^{(l)} \text{ for } l \in 0, 1, ..., K
+    h_u^{(l+1)} = n_u^{(l)} \text{ for } l \in 0, 1, ..., K - 1
     $$
 \end{itemize}
 
 \subsection{Final Node Representation (Hiroshi)} \label{final_node_representation}
 
-TO DO: Explain LightGCN Final Node Rep and Concat Final Node Rep here.
+Four different choices of final node representation were chosen to be compared. Let $h_u^*$ be the final representation, then we can choose function $f$ such that $h_u^*=f(h_u^{(0)},h_u^{(1)},\hdots,h_u^{(K)})$.
+
+\begin{itemize}
+    \item \textbf{Concatenation}, which simply concatenates embeddings from all layers into a single embedding.
+    $$h_u^*=h_u^{(0)} \oplus h_u^{(1)} \oplus \cdots \oplus h_u^{(K)}$$
+    This means that the number of dimensions of the embedding is multiplied by the number of layers $+1$, which can be very big. This is the approach used by NGCF \cite{ngcf}.
+    \item \textbf{Mean}, which averages the embeddings from each layer instead of concatenating them. Mathematically, this is
+    $$h_u^*=\frac{1}{K+1}\sum_{l=0}^Kh_u^{(l)}$$
+    This avoids the explosion in embedding dimensions, but risks losing some information in the process, as it is unclear whether such a simple combination of embeddings from different layers can produce a more meaningful embedding. This is the approach used by LightGCN \cite{lightgcn}.
+    \item \textbf{Weighted}, which is a weighted sum of the embeddings from each layer.
+    $$h_u^*=\sum_{l=0}^K\alpha^{(l)}h_u^{(l)}$$
+    where each $\alpha$ is a learnable parameter. This approach is mentioned in LightGCN \cite{lightgcn} but is not fully explored.
+    
+    In practice we do not want the norm of the embeddings to explode, so we keep it as a \textit{convex} weighted sum by using a softmax over the alphas.
+    $$h_u^*=\frac{\sum_{l=0}^K (\exp(\alpha^{(l)})h_u^{(l)})}{\sum_{l=0}^K \exp(\alpha^{(l)})}$$
+\end{itemize}
 
 \subsection{Ranking Score Prediction}
 
@@ -299,91 +328,84 @@ With the final learned embeddings outputed from the final node representation (d
 \begin{align*}
     \hat{y}_{ui} = \mathbf{e}_u^\top \mathbf{e}_i
 \end{align*}
+These ranking score predictions would be used to compute the loss function (as defined in \ref{bpr_loss}), which allows us to optimize the GNN weights via back propagation.
 
-\textbf{Loss Function}
+\textbf{Loss Function} \label{bpr_loss}
 
-In \cite{lightgcn}, the authors train LightGCN using the Bayesian Personalized Ranking (BPR) loss:
-
-In \cite{lightgcn}, the authors 
+In \cite{lightgcn}, the authors proposed the use of the Bayesian Personalized Ranking (BPR) loss function in training recommenders for ranking predictions. A mathematical definition of the BPR loss is given below:
 \begin{align*}
     L_{\mbox{BPR}} = - \sum_{u = 1}^M \sum_{i \in \mathcal{N}_u} \sum_{j \notin \mathcal{N}_u} \ln \sigma(\hat{y}_{ui} - \hat{y}_{uj}) + \lambda \| \mathbf{E}^{(0)} \|^2
 \end{align*}
-where $\lambda$ is a tuning parameter for the $L_2$ regularization. Intuitively, BPR is a pairwise loss that encourages the prediction of an observed entry to be higher than its unobserved counterparts. In our implementation, we employ the BPR loss function in conjunction with the Adam \cite{adam} optimizer.
+where $\lambda$ is a tuning parameter for the $L_2$ regularization on the initial embedding weights. Intuitively, BPR is a pairwise loss that encourages the prediction of an observed entry to be higher than its unobserved counterparts.
 
-\subsection{GNN 1: LightGCN}
+Since our GNN architecture is similar to the LightGCN model proposed in \cite{lightgcn} and our goal is also to predict user rankings for the items, we will also employ the BPR loss function in this project. We will use it in conjunction with the Adam \cite{adam} optimizer.
 
-The LightGCN model was originally proposed in \cite{lightgcn} to simplify the design of Neural Graph Collaborative Filtering (NGCF), which was proposed earlier in \cite{ngcf}. Specifically, it includes only the most essential components in NGCF -- neighborhood aggregation -- for collaborative filtering. Due to its simplicity, we decided to implement it as our first GNN and adapt it to the MovieLens dataset.
+% \subsection{GNN 1: LightGCN}
 
-\subsubsection{LightGCN: Model Definition}
+% The LightGCN model was originally proposed in \cite{lightgcn} to simplify the design of Neural Graph Collaborative Filtering (NGCF), which was proposed earlier in \cite{ngcf}. Specifically, it includes only the most essential components in NGCF -- neighborhood aggregation -- for collaborative filtering. Due to its simplicity, we decided to implement it as our first GNN and adapt it to the MovieLens dataset.
 
-LightGCN learns the embeddings for the users and movies by iteratively applying graph convolution on the user-item interaction graph, as depicted in Figure \ref{fig:user-item-interact-graph}. Note that the user-item interaction graph is assume to be bipartite, so the user embeddings are updated only using the movies embeddings and vice versa.
+% \subsubsection{LightGCN: Model Definition}
 
-Figure \ref{fig:light-gcn-architecture} summarizes the overall model architecture of LightGCN. In the sections below, we describe each component of this architecture in detail and also present a mathematical overview of the model training procedure.
+% LightGCN learns the embeddings for the users and movies by iteratively applying graph convolution on the user-item interaction graph, as depicted in Figure \ref{fig:user-item-interact-graph}. Note that the user-item interaction graph is assume to be bipartite, so the user embeddings are updated only using the movies embeddings and vice versa.
 
-\textbf{Light Graph Convolution (LGC)}
+% Figure \ref{fig:light-gcn-architecture} summarizes the overall model architecture of LightGCN. In the sections below, we describe each component of this architecture in detail and also present a mathematical overview of the model training procedure.
 
-In contrast to NGCF, the graph convolution operation in LightGCN is just a simple weighted sum aggregator, abandoning the use of feature transformation and nonlinear activation. Mathematically, the graph convolution operation is defined as:
-\begin{align*}
-    \mathbf{e}_u^{(k+1)} = \sum_{i \in \mathcal{N}_u} \frac{\mathbf{e}_i^{(k)}}{\sqrt{| \mathcal{N}_u | | \mathcal{N}_i | }} \\
-    \mathbf{e}_i^{(k+1)} = \sum_{u \in \mathcal{N}_i} \frac{\mathbf{e}_u^{(k)}}{\sqrt{| \mathcal{N}_i | | \mathcal{N}_u | }}
-\end{align*}
-where the normalization term $\frac{1}{\sqrt{|\mathcal{N}_i| |\mathcal{N}_u|}}$ helps avoid increasing the scale of the embeddings with more graph convolution operations. \cite{lightgcn}
+% \textbf{Light Graph Convolution (LGC)}
 
-\textbf{Layer Combination (Weighted Sum)}
+% In contrast to NGCF, the graph convolution operation in LightGCN is just a simple weighted sum aggregator, abandoning the use of feature transformation and nonlinear activation. Mathematically, the graph convolution operation is defined as:
+% \begin{align*}
+%     \mathbf{e}_u^{(k+1)} = \sum_{i \in \mathcal{N}_u} \frac{\mathbf{e}_i^{(k)}}{\sqrt{| \mathcal{N}_u | | \mathcal{N}_i | }} \\
+%     \mathbf{e}_i^{(k+1)} = \sum_{u \in \mathcal{N}_i} \frac{\mathbf{e}_u^{(k)}}{\sqrt{| \mathcal{N}_i | | \mathcal{N}_u | }}
+% \end{align*}
+% where the normalization term $\frac{1}{\sqrt{|\mathcal{N}_i| |\mathcal{N}_u|}}$ helps avoid increasing the scale of the embeddings with more graph convolution operations. \cite{lightgcn}
 
-After $K$ layers of graph convolutions, the final user/movie embedding is obtained as a weighted average of the embeddings from layers $0$ through $K$:
-\begin{align*}
-    \mathbf{e}_u = \sum_{k = 0}^K \alpha_k \mathbf{e}_u^{(k)} \\
-    \mathbf{e}_i = \sum_{k = 0}^K \alpha_k \mathbf{e}_i^{(k)}
-\end{align*}
-where $\alpha_k \geq 0$ is the weight assigned to the embedding from each layer. In \cite{lightgcn}, the authors found that setting $\alpha_k \sim \mbox{Uniform}(0, \frac{1}{K + 1})$ achieves good performance, so we will set $\alpha_k \sim \mbox{Uniform}(0, \frac{1}{K+1})$ in our implementation as well.
+% \textbf{Layer Combination (Weighted Sum)}
 
-\textbf{Ranking Score Prediction}
+% After $K$ layers of graph convolutions, the final user/movie embedding is obtained as a weighted average of the embeddings from layers $0$ through $K$:
+% \begin{align*}
+%     \mathbf{e}_u = \sum_{k = 0}^K \alpha_k \mathbf{e}_u^{(k)} \\
+%     \mathbf{e}_i = \sum_{k = 0}^K \alpha_k \mathbf{e}_i^{(k)}
+% \end{align*}
+% where $\alpha_k \geq 0$ is the weight assigned to the embedding from each layer. In \cite{lightgcn}, the authors found that setting $\alpha_k \sim \mbox{Uniform}(0, \frac{1}{K + 1})$ achieves good performance, so we will set $\alpha_k \sim \mbox{Uniform}(0, \frac{1}{K+1})$ in our implementation as well.
 
-With the final learned embeddings for the users and the movies, LightGCN predicts the ranking score \cite{lightgcn} for recommending movie $i$ to user $u$ as simply their inner product:
-\begin{align*}
-    \hat{y}_{ui} = \mathbf{e}_u^\top \mathbf{e}_i
-\end{align*}
+% \textbf{Ranking Score Prediction}
 
-\textbf{Loss Function}
+% With the final learned embeddings for the users and the movies, LightGCN predicts the ranking score \cite{lightgcn} for recommending movie $i$ to user $u$ as simply their inner product:
+% \begin{align*}
+%     \hat{y}_{ui} = \mathbf{e}_u^\top \mathbf{e}_i
+% \end{align*}
 
-In \cite{lightgcn}, the authors train LightGCN using the Bayesian Personalized Ranking (BPR) loss:
-\begin{align*}
-    L_{\mbox{BPR}} = - \sum_{u = 1}^M \sum_{i \in \mathcal{N}_u} \sum_{j \notin \mathcal{N}_u} \ln \sigma(\hat{y}_{ui} - \hat{y}_{uj}) + \lambda \| \mathbf{E}^{(0)} \|^2
-\end{align*}
-where $\lambda$ is a tuning parameter for the $L_2$ regularization. Intuitively, BPR is a pairwise loss that encourages the prediction of an observed entry to be higher than its unobserved counterparts. In our implementation, we employ the BPR loss function in conjunction with the Adam \cite{adam} optimizer.
+% \textbf{Loss Function}
 
-\textbf{Mathematical Overview of the Training Procedure} \cite{lightgcn}
+% In \cite{lightgcn}, the authors train LightGCN using the Bayesian Personalized Ranking (BPR) loss:
+% \begin{align*}
+%     L_{\mbox{BPR}} = - \sum_{u = 1}^M \sum_{i \in \mathcal{N}_u} \sum_{j \notin \mathcal{N}_u} \ln \sigma(\hat{y}_{ui} - \hat{y}_{uj}) + \lambda \| \mathbf{E}^{(0)} \|^2
+% \end{align*}
+% where $\lambda$ is a tuning parameter for the $L_2$ regularization. Intuitively, BPR is a pairwise loss that encourages the prediction of an observed entry to be higher than its unobserved counterparts. In our implementation, we employ the BPR loss function in conjunction with the Adam \cite{adam} optimizer.
 
-Notice that the only learnable parameter in LightGCN is the initial user/movie embeddings $\mathbf{E}^{(0)} \in \mathbb{R}^{(M + N) \times T}$. Here, $M$, $N$, and $T$ denotes the number of users, the number of movies, and the embedding size respectively. Since each graph convolution is just a linear transformation of the previous layer, we can derive a closed form solution of the final embeddings $\mathbf{E}$ in terms of the initial embeddings $\mathbf{E}^{(0)}$.
+% \textbf{Mathematical Overview of the Training Procedure} \cite{lightgcn}
 
-Let $\mathbf{R} \in \mathbb{R}^{M \times N}$ denote the interaction matrix where $\mathbf{R}_{ui}$ is 1 if user $u$ has a rating for movie $i$ and 0 otherwise. Then, we know the adjacency matrix of the bipartite user-movie interaction graph is
-\begin{align*}
-    \mathbf{A} =
-    \begin{pmatrix}
-    \mathbf{0} & \mathbf{R} \\
-    \mathbf{R}^\top & \mathbf{0}
-    \end{pmatrix}
-\end{align*}
+% Notice that the only learnable parameter in LightGCN is the initial user/movie embeddings $\mathbf{E}^{(0)} \in \mathbb{R}^{(M + N) \times T}$. Here, $M$, $N$, and $T$ denotes the number of users, the number of movies, and the embedding size respectively. Since each graph convolution is just a linear transformation of the previous layer, we can derive a closed form solution of the final embeddings $\mathbf{E}$ in terms of the initial embeddings $\mathbf{E}^{(0)}$.
 
-Treating this as a classical matrix factorization problem, we arrive at the propagation rule:
-\begin{align*}
-    \mathbf{E}^{(k+1)} = \left( \mathbf{D}^{-\frac{1}{2}} \mathbf{A} \mathbf{D}^{-\frac{1}{2}} \right) \mathbf{E}^{(k)}
-\end{align*}
-where $\mathbf{D} \in \mathbb{R}^{(M + N) \times (M + N)}$ is a diagonal matrix such that the $i$th diagonal entry denotes the number of non-zero entries in the $i$th row of $\mathbf{A}$. Denote $\mathbf{\tilde{A}} := \mathbf{D}^{-\frac{1}{2}} \mathbf{A} \mathbf{D}^{-\frac{1}{2}}$, we conclude that
-\begin{align*}
-\mathbf{E} &= \alpha_0 \mathbf{E}^{(0)} + \alpha_1 \mathbf{E}^{(1)} + \alpha_2 \mathbf{E}^{(2)} + \hdots + \alpha_K \mathbf{E}^{(K)} \\
-&= \alpha_0 \mathbf{E}^{(0)} + \alpha_1 \mathbf{\tilde{A}} \mathbf{E}^{(0)} + \alpha_2 \mathbf{\tilde{A}}^2 \mathbf{E}^{(0)} + \hdots + \alpha_K \mathbf{\tilde{A}}^K \mathbf{E}^{(0)}
-\end{align*}
-is the closed form solution of the final embeddings $\mathbf{E}$, which we can then feed into the BPR loss function by generating the ranking score predictions.
+% Let $\mathbf{R} \in \mathbb{R}^{M \times N}$ denote the interaction matrix where $\mathbf{R}_{ui}$ is 1 if user $u$ has a rating for movie $i$ and 0 otherwise. Then, we know the adjacency matrix of the bipartite user-movie interaction graph is
+% \begin{align*}
+%     \mathbf{A} =
+%     \begin{pmatrix}
+%     \mathbf{0} & \mathbf{R} \\
+%     \mathbf{R}^\top & \mathbf{0}
+%     \end{pmatrix}
+% \end{align*}
 
-\subsubsection{GNN 2: <Hiroshi's GNN>}
-
-TBD
-
-\subsubsection{GNN 3: TZ's GNN}
-
-TBD
+% Treating this as a classical matrix factorization problem, we arrive at the propagation rule:
+% \begin{align*}
+%     \mathbf{E}^{(k+1)} = \left( \mathbf{D}^{-\frac{1}{2}} \mathbf{A} \mathbf{D}^{-\frac{1}{2}} \right) \mathbf{E}^{(k)}
+% \end{align*}
+% where $\mathbf{D} \in \mathbb{R}^{(M + N) \times (M + N)}$ is a diagonal matrix such that the $i$th diagonal entry denotes the number of non-zero entries in the $i$th row of $\mathbf{A}$. Denote $\mathbf{\tilde{A}} := \mathbf{D}^{-\frac{1}{2}} \mathbf{A} \mathbf{D}^{-\frac{1}{2}}$, we conclude that
+% \begin{align*}
+% \mathbf{E} &= \alpha_0 \mathbf{E}^{(0)} + \alpha_1 \mathbf{E}^{(1)} + \alpha_2 \mathbf{E}^{(2)} + \hdots + \alpha_K \mathbf{E}^{(K)} \\
+% &= \alpha_0 \mathbf{E}^{(0)} + \alpha_1 \mathbf{\tilde{A}} \mathbf{E}^{(0)} + \alpha_2 \mathbf{\tilde{A}}^2 \mathbf{E}^{(0)} + \hdots + \alpha_K \mathbf{\tilde{A}}^K \mathbf{E}^{(0)}
+% \end{align*}
+% is the closed form solution of the final embeddings $\mathbf{E}$, which we can then feed into the BPR loss function by generating the ranking score predictions.`
 
 \section{Results, Discussion, and Analysis} \label{results}
 
@@ -391,6 +413,10 @@ TBD
 
 \textit{Analyze your model and results. Highlight a few limitations of your approach (e.g., strong assumptions you had to make, constraints, when your method did not work in practice, etc.). Do
 the results and the explanation provide insights into the ML models or the environment that you were dealing with? Comment on whether you think there is a way to further improve your method to eliminate these limitations.}
+
+\subsection{Rank-based Metrics for Model Evaluation}
+
+To evaluate our GNNs and benchmark it against the baselines, we will compare their performance in predicting the relative ranking of the top K items for a user. 
 
 \subsection{LightGCN: Model Performance Evaluation} \label{lightgcn-eval}
 
