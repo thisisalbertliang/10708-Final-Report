@@ -36,6 +36,7 @@
 \usepackage{tabularx}
 \usepackage{graphicx}
 \usepackage{caption} 
+\usepackage{multirow}
 \captionsetup[table]{skip=10pt}
 
 % Default fixed font does not support bold face
@@ -126,7 +127,9 @@ backgroundcolor = \color{light-gray},
 % \end{abstract}
 
 
-\section{Introduction \& Motivation}
+\section{Introduction}
+
+\textit{TODO: change regression problem to ranking problem}
 
 Recommendation systems are deployed to serve personalized content that is interesting to each individual user on applications such as YouTube, Amazon, and UberEats. Modern recommendation systems leverage deep-learning-based models to better characterize user interests. Designing recommendation models has become an important problem in the machine learning field.
 
@@ -135,23 +138,10 @@ While there are many sub-problems in this field, we focus on a specific task, ra
 Here we will use the \textbf{MovieLens 100K} \cite{movielens} dataset to train and evaluate our models. MovieLens is a series of datasets collected from the MovieLens website where users have rated movies on a rating scale of 1 to 5. These datasets are widely used as benchmark datasets for recommendation systems \cite{DBLP:journals/corr/abs-2011-02260}, making it great forr comparing our models to others. There are different sized MovieLens datasets, and we will use the smallest but most commonly used 100k dataset since it will train faster with limited hardware and have more comparisons available. Within the MovieLens framework, $u$ corresponds to users, $i$ corresponds to movies, and $r_{ui}$ corresponds to the rating that user $u$ gave to movie $i$, where $r_{ui}\in\{1,2,3,4,5\}$. Since the rating is a discrete but linear scale, we will evaluate the results using RMSE (root mean squared error) between the predicted rating $\hat{r}_{ui}$ and the ground truth rating $r_{ui}$.
 
 
-\section{Background \& Related Work}
+\section{Background}
 
-Recommendation systems have existed since computer systems that matched users to items existed, from around the 1990s. As the internet boomed in the 21st century, designing a good recommendation system has become more and more important, and significant research has been done in this area. 
+\textit{TODO: Briefly summarize the findings from your midway report.}
 
-Some well-known traditional methods roughly categorize into user or item neighborhood-based methods, matrix-factorization-based methods, neural network-based methods, etc. One classic neighborhood method is collaborative filtering \cite{cf} where predictions about the interest of a user are made by collecting the preferences of many users. An instance of collaborative filtering is matrix factorization 
-\cite{mf}. Matrix factorization techniques work by decomposing a user-item interaction matrix into the product of two lower-dimensional matrices, essentially creating an embedding for users and items in lower-dimensional spaces. Recommendations then can be made by, e.g., querying the neighborhood of a user's embedding vector. Methods developed after MF expands on this key idea of embedding. Factorization machines \cite{fm} allows the incorporation of side features while creating the embeddings and deep learning methods, such as Wide \& Deep \cite{wideanddeep}, generalize and merge ideas from traditional methods while leveraging the power of deep neural nets.
-
-However, traditional methods are often limited in expressivity since the models are relatively simple, for example a single matrix. Neural networks by themselves also lack the structure needed to take advantage of the complex structure between user-item ratings and features. We hypothesize that the best of two worlds might be attainable using graph neural networks.
-
-Our dataset is inherently structured as a bipartite graph, with one half being the users and the other half being the items. Edges between these nodes thus corresponds to the ratings user gave to items. Each user and each item also have features assigned to them, which can also be represented in a graph neural network. Then the message passing and aggregation algorithms applied to this graph is a combination of both the traditional neighborhood method and a neural network. We hope to explore various types of message passing and aggregation algorithms, such as GraphSAGE \cite{graphsage}, to optimize them for rating prediction. The results will then be compared to baseline algorithms we will define.
-
-
-\section{Methods}
-
-\subsection{Baselines} \label{baselines}
-
-TO DO: a more concise explanation of baselines
 
 % To benchmark the performance of our GNNs, we implemented a suite of baseline algorithms, including SVD, NMF, SlopeOne, k-NN, and Random Guessing. We measured their respective out-sample performance using a 5 fold cross validation. We fixed the random seed for all baseline algorithms so that they have the same partitioning for the 5 folds.
 
@@ -222,14 +212,19 @@ TO DO: a more concise explanation of baselines
 %     \hat{\sigma} &= \sqrt{\sum_{r_{ui} \in R_{train}} \frac{(r_{ui} - \hat{\mu})^2}{| R_{train} |}}
 % \end{align*}
 
-\subsection{Graph Neural Network (GNN)}
+Recommendation systems have existed since computer systems that matched users to items existed, from around the 1990s. As the internet boomed in the 21st century, designing a good recommendation system has become more and more important, and significant research has been done in this area. 
 
-\textit{By the final report, we expect you to have implemented your own ideas beyond the baseline. Additionally, you should describe what work you have completed towards creating a method which beats the
-baseline. In addition to successful approaches, you should briefly detail approaches which you tried and found to not work well. What methods have you completed? What is your motivation behind these techniques (you are encouraged to come up with an original idea of your own or interesting applications rather than simply implementing or applying existing ML algorithms)?}
+Some well-known traditional methods roughly categorize into user or item neighborhood-based methods, matrix-factorization-based methods, neural network-based methods, etc. One classic neighborhood method is collaborative filtering \cite{cf} where predictions about the interest of a user are made by collecting the preferences of many users. An instance of collaborative filtering is matrix factorization 
+\cite{mf}. Matrix factorization techniques work by decomposing a user-item interaction matrix into the product of two lower-dimensional matrices, essentially creating an embedding for users and items in lower-dimensional spaces. Recommendations then can be made by, e.g., querying the neighborhood of a user's embedding vector. Methods developed after MF expands on this key idea of embedding. Factorization machines \cite{fm} allows the incorporation of side features while creating the embeddings and deep learning methods, such as Wide \& Deep \cite{wideanddeep}, generalize and merge ideas from traditional methods while leveraging the power of deep neural nets.
 
-\subsubsection{Overview of Graph Neural Networks (Albert)}
+However, traditional methods are often limited in expressivity since the models are relatively simple, for example a single matrix. Neural networks by themselves also lack the structure needed to take advantage of the complex structure between user-item ratings and features. We hypothesize that the best of two worlds might be attainable using graph neural networks.
 
-TO DO: talk about the overall structure of a GNN here, i.e. the 3 components
+Our dataset is inherently structured as a bipartite graph, with one half being the users and the other half being the items. Edges between these nodes thus corresponds to the ratings user gave to items. Each user and each item also have features assigned to them, which can also be represented in a graph neural network. Then the message passing and aggregation algorithms applied to this graph is a combination of both the traditional neighborhood method and a neural network. We hope to explore various types of message passing and aggregation algorithms, such as GraphSAGE \cite{graphsage}, to optimize them for rating prediction. The results will then be compared to baseline algorithms we will define.
+
+
+\section{Related Work} 
+
+\textit{Previous work related to your topic that you may have referenced to help guide your project.}
 
 A graph neural network (GNN) is a special class of deep learning models that is design to operate on graph-structured data. Recently, GNNs have been shown to be effective for a wide range of recommendation tasks \cite{survey}. In the context of recommender systems, the main idea behind a GNN is to represent the user-item rating data as a graph and then exploit the graph-based structures to make more accurate predictions about which which items a user might be interested in. This is different from the baseline methods that are introduced in Section \ref{baselines}, which do not explicitly use the graph structure of the user-item rating data.
 
@@ -242,7 +237,22 @@ There are many different types of GNNs in the recommender systems world. \cite{s
     \item \textbf{Knowledge graph-based recommendation}, where a GNN is used to model the relationships between entities in a knowledge graph, in order to make recommendations based on the structure of the knowledge graph.
 \end{itemize}
 
-In this project, we would focus on GNNs for user-item collaborative filtering. In our view, collaborative filtering based GNN typically consists of 3 main components:
+\section{Methods}
+\textit{By the final report, we expect you to have implemented your own ideas beyond the baseline. Additionally, you should describe what work you have completed towards creating a method which beats the
+baseline. In addition to successful approaches, you should briefly detail approaches which you tried and found to not work well. What methods have you completed? What is your motivation behind these techniques (you are encouraged to come up with an original idea of your own or interesting applications rather than simply implementing or applying existing ML algorithms)?}
+
+
+
+\subsection{Ranking Paradigm}
+
+In this project, we would focus on GNNs for user-item collaborative filtering. 
+
+\textit{describe embedding, inner product score, rank based on score}
+
+
+\subsection{Graph Node Embedding}
+
+A graph embedding architecture typically consists of 3 main mechanisms:
 
 \begin{itemize}
     \item \textbf{Neighborhood Aggregation}. This step learns how to aggregate information from neighbor nodes. For example, one could compute the weighted sum of the embeddings of the neighbors of a given node, where the weights are learned by the GNN. The output from this step can be thought of as the aggregated representation of the neighbors.
@@ -303,7 +313,7 @@ For the Information Update module, we implemented three different algorithms:
     $$
 \end{itemize}
 
-\subsection{Final Node Representation (Hiroshi)} \label{final_node_representation}
+\subsubsection{Final Node Representation (Hiroshi)} \label{final_node_representation}
 
 Four different choices of final node representation were chosen to be compared. Let $h_u^*$ be the final representation, then we can choose function $f$ such that $h_u^*=f(h_u^{(0)},h_u^{(1)},\hdots,h_u^{(K)})$.
 
@@ -320,6 +330,17 @@ Four different choices of final node representation were chosen to be compared. 
     
     In practice we do not want the norm of the embeddings to explode, so we keep it as a \textit{convex} weighted sum by using a softmax over the alphas.
     $$h_u^*=\frac{\sum_{l=0}^K (\exp(\alpha^{(l)})h_u^{(l)})}{\sum_{l=0}^K \exp(\alpha^{(l)})}$$
+    \item \textbf{Self-Attention}, which is a convex weighted sum of embeddings from each layer, except that the weights are computed through a self-attention mechanism. This attention is inspired by the mechanism used in the transformers architecture \cite{transformer}, and is different from graph attention used in neighborhood aggregation above. Transformers define attention to be
+    $$\text{Attention}(Q,K,V)=\text{softmax}(\frac{QK^T}{\sqrt{d_k}})V$$
+    where $Q$ is a query vector, $K$ is a key vector, $V$ is a value vector, and $d_k$ is the dimensions of the $K$. The result is a convex combination of the value vectors, with weights determined by interactions between query and key vectors. Self-attention simply sets $Q=K=V$ to the embedding in question. We then employ a few modifications to this scheme to fit our use case.
+    \begin{enumerate}
+        \item This mechanism traditionally computes attention results for all $K+1$ embeddings to produce $K+1$ results. We only need one final result, so we choose to only use the first result and discard the rest.
+        \item We employ a trainable linear feature transformation for the query vector only, so attention can learn what to attend to.
+        \item We discard the $1/\sqrt{d_k}$ factor since softmax already normalizes the results.
+    \end{enumerate}
+    Combining these, we obtain
+    $$h_u^*=\frac{\sum_{l=0}^K (\exp(\langle h_u^{(0)}W_A, h_u^{(l)}\rangle)h_u^{(l)})}{\sum_{l=0}^K \exp(\langle h_u^{(0)}W_A, h_u^{(l)}\rangle)}$$
+    where $W_A$ is a trainable feature transformation.
 \end{itemize}
 
 \subsection{Ranking Score Prediction}
@@ -407,37 +428,65 @@ Since our GNN architecture is similar to the LightGCN model proposed in \cite{li
 % \end{align*}
 % is the closed form solution of the final embeddings $\mathbf{E}$, which we can then feed into the BPR loss function by generating the ranking score predictions.`
 
-\section{Results, Discussion, and Analysis} \label{results}
+\section{Results} \label{results}
 
 \textit{Your experimental results. Show plots of the performance of your algorithms and interpret what they mean. Be sure to label and explain this clearly. Describe how the current results in each of the experiments align with your expectations. What metrics did you use for evaluation? How do your results compare to prior work?}
 
-\textit{Analyze your model and results. Highlight a few limitations of your approach (e.g., strong assumptions you had to make, constraints, when your method did not work in practice, etc.). Do
-the results and the explanation provide insights into the ML models or the environment that you were dealing with? Comment on whether you think there is a way to further improve your method to eliminate these limitations.}
-
 \subsection{Rank-based Metrics for Model Evaluation}
 
-To evaluate our GNNs and benchmark it against the baselines, we will compare their performance in predicting the relative ranking of the top K items for a user. 
+To evaluate our GNNs and benchmark it against the baselines, we will compare their performance in predicting the relative ranking of the top K items for a user. This is known as the Learning to Rank problem \cite{learning_to_rank}. We will employ 4 different rank-based metrics: Precision @ K, Recall @ K, Mean Average Precision (MAP) @ K, Normalized Discounted Cumulative Gain (nDCG) @ K, which are defined in the next sections. Throughout this report, we will set $K = 10$ in our evaluation.
 
-\subsection{LightGCN: Model Performance Evaluation} \label{lightgcn-eval}
+\subsubsection{Precision @ K}
 
-To evaluate the performance of LightGCN and benchmark it against the baselines, we employ the following rank-based metrics
+For a given user $u$, Precision @ K measures the fraction of the top K items recommended by the model that are relevant to the user. Mathematically, it is defined as \cite{survey}:
 $$
-\begin{cases}
-\text{Mean Average Precision (MAP) @ K} \\
-\text{Normalized Discounted Cumulative Gain (nDCG) @ K} \\
-\text{Precision @ K} \\
-\text{Recall @ K}
-\end{cases}
+\mbox{Precision@K}(u) = \frac{| R^K(u) \cap T(u) |}{K}
 $$
-For a detailed definition of these metrics, we direct the reader to \cite{metrics}.
+where $R^K(u)$ is the set of top K items ranked by the model for user $u$, and $T(u)$ is the ground truth set of top K items for user $u$. If we do not specify the user $u$, then we are referring to the average Precision @ K across all users, i.e. $\mbox{Precision@K} = \frac{1}{M} \sum_{u = 1}^M \mbox{Precision@K(u)}$.
 
-Table \ref{tab:lightgcn-100k-results} summarizes the rank-based metrics for LightGCN as well as the baseline models, which were all trained on the \texttt{MovieLens 100K} dataset. In addition, These results are visualized in Figure \ref{fig:lightgcn-100k-eval}.
+\subsubsection{Recall @ K}
 
-As shown in Figure \ref{fig:lightgcn-100k-eval}, our LightGCN model significantly outperformed all baseline models without even using any complicated non-linear feature transformation. For example, the MAP @ K and Recall @ K of LightGCN are almost two times better than the baselines.
+Recall @ K measures the fraction of the top K items recommended by the model that are in the ground truth set of top K items for the user. Mathematically, it is defined as \cite{survey}:
+$$
+\mbox{Recall@K}(u) = \frac{| R^K(u) \cap T(u) |}{|T(u)|}
+$$
+Similarly, if we do not specify the user $u$, then we are referring to the average Recall @ K across all users, i.e. $\mbox{Recall@K} = \frac{1}{M} \sum_{u = 1}^M \mbox{Recall@K(u)}$.
 
-We believe the main factor that contributed to the success of LightGCN is that it systematically learns the multi-hop relationships in the user-movie interaction graph, which is not utilized by the baseline methods.
+\subsubsection{Normalized Discounted Cumulative Gain (nDCG) @ K}
 
- TO DO: Highlight a few limitations of LightGCN, which could be a nice segway into our next GNN that potentially improves upon LightGCN.
+Normalized Discounted Cumulative Gain (nDCG) @ K measures the ranking quality of the top K recommended items by differentiating the contributions of correctly recommended items based on their ranking positions. Mathematically, it is defined as \cite{survey}:
+$$
+\mbox{nDCG@K} = \frac{1}{M} \sum_{u = 1}^M \frac{\sum_{k = 1}^K \frac{I(R^K_k(u) \in T(u))}{\log(k + 1)}}{\sum_{k = 1}^K \frac{1}{ \log(k + 1)}}
+$$
+where $I(\cdot)$ is the indicator function, $R^K_k(u)$ is the $k$th item in the top K items ranked by the model for user $u$, and $T(u)$ is the ground truth set of top K items for user $u$. The denominator is the ideal DCG score if the top K items are perfectly ranked by the model.
+
+\subsubsection{Mean Average Precision (MAP) @ K}
+
+Mean Average Precision (MAP) @ K is the average of the Precision @ K across all users for multiple queries. Mathematically, it is defined as \cite{survey}:
+$$
+\mbox{MAP@K} = \frac{1}{M} \sum_{u = 1}^M \sum_{k = 1}^K \frac{I(R^K_k(u) \in T(u)) \mbox{Precision@K}(u)}{K}
+$$
+
+% \subsection{LightGCN: Model Performance Evaluation} \label{lightgcn-eval}
+
+% To evaluate the performance of LightGCN and benchmark it against the baselines, we employ the following rank-based metrics
+% $$
+% \begin{cases}
+% \text{Mean Average Precision (MAP) @ K} \\
+% \text{Normalized Discounted Cumulative Gain (nDCG) @ K} \\
+% \text{Precision @ K} \\
+% \text{Recall @ K}
+% \end{cases}
+% $$
+% For a detailed definition of these metrics, we direct the reader to \cite{metrics}.
+
+% Table \ref{tab:lightgcn-100k-results} summarizes the rank-based metrics for LightGCN as well as the baseline models, which were all trained on the \texttt{MovieLens 100K} dataset. In addition, These results are visualized in Figure \ref{fig:lightgcn-100k-eval}.
+
+% As shown in Figure \ref{fig:lightgcn-100k-eval}, our LightGCN model significantly outperformed all baseline models without even using any complicated non-linear feature transformation. For example, the MAP @ K and Recall @ K of LightGCN are almost two times better than the baselines.
+
+% We believe the main factor that contributed to the success of LightGCN is that it systematically learns the multi-hop relationships in the user-movie interaction graph, which is not utilized by the baseline methods.
+
+%  TO DO: Highlight a few limitations of LightGCN, which could be a nice segway into our next GNN that potentially improves upon LightGCN.
 
 % \textbf{Precision @ K}
 
@@ -454,11 +503,10 @@ We believe the main factor that contributed to the success of LightGCN is that i
 %     \text{MAP @ K} = \frac{1}{K} \sum_{k = 1}^K \text{Prediction @ $k$}
 % \end{align*}
 
-\subsection{<Hiroshi GNN>: Model Performance Evaluation}
+\section{Discussion and Analysis}
 
-\subsection{<Tianyu GNN>: Model Performance Evaluation}
-
-
+\textit{Analyze your model and results. Highlight a few limitations of your approach (e.g., strong assumptions you had to make, constraints, when your method did not work in practice, etc.). Do
+the results and the explanation provide insights into the ML models or the environment that you were dealing with? Comment on whether you think there is a way to further improve your method to eliminate these limitations.}
 
 % Table \ref{tab:rmse_results}, \ref{tab:mae_results} show the 5-fold cross-validation RMSE and MAE of the baseline algorithms, respectively. Figure \ref{fig:rmse-baselines}, \ref{fig:mae-baselines} plots the mean RMSE and MAE against the baseline algorithms, respectively.
 
@@ -582,6 +630,52 @@ We believe the main factor that contributed to the success of LightGCN is that i
     \caption{A visualization of the results from Table \ref{tab:lightgcn-100k-results}.}
     \label{fig:lightgcn-100k-eval}
 \end{figure}
+
+% Please add the following required packages to your document preamble:
+% \usepackage{multirow}
+\begin{table}[]
+\centering
+\begin{tabular}{|l|llll|}
+\hline
+Ranked by                  &                                                                                                           &                                             & Mean           & Stddev \\ \hline
+\multirow{9}{*}{Recall @ K}    & \multicolumn{1}{l|}{\multirow{2}{*}{\begin{tabular}[c]{@{}l@{}}Neighbor\\ Aggregator\end{tabular}}}       & \multicolumn{1}{l|}{\textbf{attention}}     & \textbf{0.413} & 0.294  \\ \cline{3-5} 
+                           & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{degree norm}            & 0.545          & 0.267  \\ \cline{2-5} 
+                           & \multicolumn{1}{l|}{\multirow{3}{*}{\begin{tabular}[c]{@{}l@{}}Information\\ Updater\end{tabular}}}       & \multicolumn{1}{l|}{\textbf{single linear}} & \textbf{0.318} & 0.264  \\ \cline{3-5} 
+                           & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{multi linear}           & 0.552          & 0.128  \\ \cline{3-5} 
+                           & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{identity}               & 0.568          & 0.352  \\ \cline{2-5} 
+                           & \multicolumn{1}{l|}{\multirow{4}{*}{\begin{tabular}[c]{@{}l@{}}Final Node\\ Representation\end{tabular}}} & \multicolumn{1}{l|}{\textbf{mean}}          & \textbf{0.312} & 0.192  \\ \cline{3-5} 
+                           & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{attention}              & 0.319          & 0.250  \\ \cline{3-5} 
+                           & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{weighted}               & 0.479          & 0.250  \\ \cline{3-5} 
+                           & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{concat}                 & 0.806          & 0.107  \\ \hline
+\multirow{9}{*}{NDCG @ K}      & \multicolumn{1}{l|}{\multirow{2}{*}{\begin{tabular}[c]{@{}l@{}}Neighbor\\ Aggregator\end{tabular}}}       & \multicolumn{1}{l|}{\textbf{attention}}     & \textbf{0.413} & 0.297  \\ \cline{3-5} 
+                           & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{degree norm}            & 0.545          & 0.263  \\ \cline{2-5} 
+                           & \multicolumn{1}{l|}{\multirow{3}{*}{\begin{tabular}[c]{@{}l@{}}Information\\ Updater\end{tabular}}}       & \multicolumn{1}{l|}{\textbf{single linear}} & \textbf{0.307} & 0.278  \\ \cline{3-5} 
+                           & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{multi linear}           & 0.542          & 0.144  \\ \cline{3-5} 
+                           & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{identity}               & 0.589          & 0.326  \\ \cline{2-5} 
+                           & \multicolumn{1}{l|}{\multirow{4}{*}{\begin{tabular}[c]{@{}l@{}}Final Node\\ Representation\end{tabular}}} & \multicolumn{1}{l|}{\textbf{attention}}     & \textbf{0.299} & 0.256  \\ \cline{3-5} 
+                           & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{mean}                   & 0.333          & 0.172  \\ \cline{3-5} 
+                           & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{weighted}               & 0.479          & 0.257  \\ \cline{3-5} 
+                           & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{concat}                 & 0.806          & 0.107  \\ \hline
+\multirow{9}{*}{Precision @ K} & \multicolumn{1}{l|}{\multirow{2}{*}{\begin{tabular}[c]{@{}l@{}}Neighbor\\ Aggregator\end{tabular}}}       & \multicolumn{1}{l|}{\textbf{attention}}     & \textbf{0.406} & 0.301  \\ \cline{3-5} 
+                           & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{degree norm}            & 0.552          & 0.256  \\ \cline{2-5} 
+                           & \multicolumn{1}{l|}{\multirow{3}{*}{\begin{tabular}[c]{@{}l@{}}Information\\ Updater\end{tabular}}}       & \multicolumn{1}{l|}{\textbf{single linear}} & \textbf{0.344} & 0.248  \\ \cline{3-5} 
+                           & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{multi linear}           & 0.521          & 0.167  \\ \cline{3-5} 
+                           & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{identity}               & 0.573          & 0.362  \\ \cline{2-5} 
+                           & \multicolumn{1}{l|}{\multirow{4}{*}{\begin{tabular}[c]{@{}l@{}}Final Node\\ Representation\end{tabular}}} & \multicolumn{1}{l|}{\textbf{attention}}     & \textbf{0.278} & 0.271  \\ \cline{3-5} 
+                           & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{mean}                   & 0.319          & 0.178  \\ \cline{3-5} 
+                           & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{weighted}               & 0.535          & 0.225  \\ \cline{3-5} 
+                           & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{concat}                 & 0.785          & 0.121  \\ \hline
+\multirow{9}{*}{MAP @ K}       & \multicolumn{1}{l|}{\multirow{2}{*}{\begin{tabular}[c]{@{}l@{}}Neighbor\\ Aggregator\end{tabular}}}       & \multicolumn{1}{l|}{\textbf{attention}}     & \textbf{0.431} & 0.291  \\ \cline{3-5} 
+                           & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{degree norm}            & 0.528          & 0.277  \\ \cline{2-5} 
+                           & \multicolumn{1}{l|}{\multirow{3}{*}{\begin{tabular}[c]{@{}l@{}}Information\\ Updater\end{tabular}}}       & \multicolumn{1}{l|}{\textbf{single linear}} & \textbf{0.297} & 0.280  \\ \cline{3-5} 
+                           & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{multi linear}           & 0.552          & 0.128  \\ \cline{3-5} 
+                           & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{identity}               & 0.589          & 0.323  \\ \cline{2-5} 
+                           & \multicolumn{1}{l|}{\multirow{4}{*}{\begin{tabular}[c]{@{}l@{}}Final Node\\ Representation\end{tabular}}} & \multicolumn{1}{l|}{\textbf{attention}}     & \textbf{0.333} & 0.241  \\ \cline{3-5} 
+                           & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{mean}                   & 0.340          & 0.164  \\ \cline{3-5} 
+                           & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{weighted}               & 0.438          & 0.296  \\ \cline{3-5} 
+                           & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{concat}                 & 0.806          & 0.107  \\ \hline
+\end{tabular}
+\end{table}
 
 \pagebreak
 
