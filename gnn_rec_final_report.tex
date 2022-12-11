@@ -122,7 +122,7 @@ backgroundcolor = \color{light-gray},
   Carnegie Mellon University \\
   \texttt{tianyuz2@andrew.cmu.edu} \\
   \And
-  \textbf{Hiroshi Wu} \\
+  \textbf{Bo Wu} \\
   Carnegie Mellon University \\
   \texttt{bw1@cs.cmu.edu} \\
 }
@@ -402,7 +402,7 @@ For each metric, we ranked the GNNs based on their performance and selected the 
     \label{fig:metrics-overall}
 \end{figure}
 
-As discussed in section \ref{metrics}, we will prioritize nDCG@10 and MAP@10 in terms of analysis. Observe that the best-performing model for nDCG and MAP has attention as the neighbor aggregator, identity as the information updater, and attention as the final node representation. This model beats the vanilla LightGCN by 18.3\% in nDCG and 29.4\% in MAP, and beats the best baseline SVD by 90.5\% in nDCG and 175\% in MAP. Although the winning models for precision and recall are different than this one, our top-performing flavored models all beat the baseline SVD by a large margin and the vanilla LightGCN by a non-trivial margin. This shows that swapping vanilla GNN components out for more powerful ones indeed brings boosts in performance.
+As discussed in section \ref{metrics}, we will prioritize nDCG@10 and MAP@10 in terms of analysis. Observe in Figure \ref{fig:metrics-overall} that the best-performing model for nDCG and MAP has attention as the neighbor aggregator, identity as the information updater, and attention as the final node representation. This model beats the vanilla LightGCN by 18.3\% in nDCG and 29.4\% in MAP, and beats the best baseline SVD by 90.5\% in nDCG and 175\% in MAP. Although the winning models for precision and recall are different than this one, our top-performing flavored models all beat the baseline SVD by a large margin and the vanilla LightGCN by a non-trivial margin. This shows that swapping vanilla GNN components out for more powerful ones indeed brings boosts in performance.
 
 \subsection{Individual Components} \label{eval-individual-components}
 
@@ -501,12 +501,12 @@ This is somewhat surprising since \textit{Single Linear} has fewer parameters th
 
 \subsubsection{Final Node Representation} \label{final-node-repr-discussion}
 
-There are two contrasting results that were obtained while testing different final node representation algorithms. Figure \ref{fig:metrics-individual-components} shows that using the \textit{mean} algorithm is far superior to the other algorithms, with \textit{attention} as second, \textit{weighted} as third, and \textit{concat} as last. These results were obtained by fixing the other components to their simplest: using \textit{degree norm} for aggregation and \textit{identity} for information updater. However, Table \ref{tab:components-avg-ranking} gives a slightly different result, where \textit{attention} is superior to \textit{mean}, while \textit{weighted} and \textit{concat} stays at the bottom of the list. This suggests that overall when we consider the variety of other components, the \textit{attention} algorithm prevails. This is also supported by Figure \label{fig:metrics-overall}, where we see more models using \textit{attention} achieving the highest metrics. We conclude that \textit{attention} generally improves very slightly upon LightGCN's original model, but there could be situations, possibly due to overfitting, where the \textit{mean} algorithm still prevails. We will recommend using the \textit{attention} algorithm since it is more versatile when paired with other algorithms.
+There are two contrasting results that were obtained while testing different final node representation algorithms. Figure \ref{fig:metrics-individual-components} shows that using the \textit{mean} algorithm is far superior to the other algorithms, with \textit{attention} as second, \textit{weighted} as third, and \textit{concat} as last. These results were obtained by fixing the other components to their simplest: using \textit{degree norm} for aggregation and \textit{identity} for information updater. However, Table \ref{tab:components-avg-ranking} gives a slightly different result, where \textit{attention} is superior to \textit{mean}, while \textit{weighted} and \textit{concat} stays at the bottom of the list. This suggests that overall when we consider the variety of other components, the \textit{attention} algorithm prevails. This is also supported by Figure \ref{fig:metrics-overall}, where we see more models using \textit{attention} achieving the highest metrics. We conclude that \textit{attention} generally improves very slightly upon LightGCN's original model, but there could be situations, possibly due to overfitting, where the \textit{mean} algorithm still prevails. We will recommend using the \textit{attention} algorithm since it is more versatile when paired with other algorithms.
 
 
-\subsubsection{A Note on Graph Construction (Hiroshi)}
+\subsubsection{A Note on Graph Construction}
 
-Although this was on our agenda, we ultimately abandoned this idea since it produced very bad results. Using \textit{degree norm}, \textit{identity}, and \textit{mean}, the raw bipartite obtained an NDCG of 0.15, while the augmented graph using genre features obtained an NDCG of 0.04, which is almost 4x worse.
+Although this was on our agenda, we ultimately abandoned this idea since it produced very bad results. Using \textit{degree norm}, \textit{identity}, and \textit{mean}, the raw bipartite obtained an NDCG of 0.15, while the augmented graph using genre features obtained an NDCG of 0.04, which is almost 4x worse. Other choices for the components produced results that were also worse, albeit not as extreme. We hypothesize that this is because the augmentations introduced edges that had effects opposite to what we would have liked. The bipartite graph facilitates collaborative filtering, where user and item embeddings are trained to be closer if they had similar interactions across different users and items. However by introducing genre nodes, movies of all types, no matter new or old, good or bad, become connected to each other, as long as they are within the same genre. Therefore many bad interactions that would not happen in reality will become 2-hop neighbors in the graph, causing bad interactions to be emphasized as much as good interactions, which could have caused the huge decline in collaborative filtering accuracy.
 
 \subsection{Overall Best-Performing Architectures}
 
@@ -749,9 +749,9 @@ recall  & recall\_std & ndcg    & ndcg\_std & precision & precision\_std & map  
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=.49\textwidth]{figs/neighbor_aggregator.png}
-    \includegraphics[width=.49\textwidth]{figs/info_updater.png}
-    \includegraphics[width=.49\textwidth]{figs/final_node_repr.png}
+    \includegraphics[width=.8\textwidth]{figs/neighbor_aggregator.png}
+    \includegraphics[width=.8\textwidth]{figs/info_updater.png}
+    \includegraphics[width=.8\textwidth]{figs/final_node_repr.png}
     \caption{The rank-based metrics of the different algorithms in each of the three components of our GNNs. Each plot assumes the other two components are fixed to their simplest forms. For example, when evaluating the Information Update component, we fix the Neighbor Aggregation component to \textit{Degree Norm} and the Final Node Representation component to \textit{Mean}.}
     \label{fig:metrics-individual-components}
 \end{figure}
