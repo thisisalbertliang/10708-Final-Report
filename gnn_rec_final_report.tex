@@ -37,7 +37,16 @@
 \usepackage{graphicx}
 \usepackage{caption} 
 \usepackage{multirow}
+\usepackage{rotating}
+\usepackage{subcaption}
+\usepackage{cleveref}
 \captionsetup[table]{skip=10pt}
+
+\captionsetup[subfigure]{subrefformat=simple,labelformat=simple}
+\renewcommand\thesubfigure{(\alph{subfigure})}
+
+\usepackage{enumitem}
+\setlist[itemize]{align=parleft,left=0pt..1em}
 
 % Default fixed font does not support bold face
 \DeclareFixedFont{\ttb}{T1}{txtt}{bx}{n}{12} % for bold
@@ -146,30 +155,6 @@ Contextualizing the ranking problem with the MovieLens dataset, $u$ corresponds 
 
 We implemented five baseline algorithms in the midway report: singular value decomposition (SVD), non-negative matrix factorization (NMF), slope one, k-nearest neighbors (kNN), and random guessing. We benchmarked them on MovieLens with regression metrics RMSE and MAE and obtained results in Table \ref{tab:rmse_results}, \ref{tab:mae_results}. SVD beats the other baselines in both RMSE and MAE. After the midway report, we additionally ran ranking-based metrics on the baseline methods and the results are summarized in Table \ref{tab:baseline-ranking-metrics}. Again, SVD outperforms other baselines except for Recall where kNN wins. Further, we observed that some of these algorithms produced non-trivial improvements to others, and determined there was likely room for improvement even upon SVD.
 
-\begin{table}[H]
-    \centering
-        \begin{tabular}{|c c c c c|} 
-         \hline
-         Model & MAP@10 & nDGC@10 & Precision@10 & Recall@10 \\ [0.5ex] 
-         \hline\hline
-         % LightGCN & 0.034 & 0.153 & 0.145 & 0.093 \\ 
-         % \hline
-         SVD & \bfseries 0.016 & \bfseries 0.095 & \bfseries 0.087 & 0.037 \\
-         \hline
-         NMF & 0.002 & 0.024 & 0.025 & 0.010 \\ 
-         \hline
-         SlopeOne & 0.001 & 0.010 & 0.012 & 0.003 \\ 
-         \hline
-         kNN & 0.012 & 0.073 & 0.084 & \bfseries 0.049 \\ 
-         \hline 
-         NormalPredictor & 0.001 & 0.013 & 0.014 & 0.004 \\[1ex] 
-         \hline
-        \end{tabular}
-    \title{sdas}
-    \caption{Rank-based evaluation metrics on baselines trained on the \texttt{movielens-100K} dataset. For a detailed definition of these metrics, see section \ref{metrics}}
-    \label{tab:baseline-ranking-metrics}
-\end{table}
-
 We noted that traditional methods are often limited in expressivity since the models are relatively simple, for example a single matrix. Neural networks by themselves also lack the structure needed to take advantage of the complex structure between user-item ratings and features. We hypothesized that the best of two worlds might be attainable using graph neural networks.
 
 Our dataset is inherently structured as a bipartite graph, with one party the users and the other party the items. Edges between these nodes thus correspond to the ratings user gave to items. Then the message passing and aggregation algorithms applied to this graph is a combination of both the traditional neighborhood method and a neural network. 
@@ -188,7 +173,7 @@ A graph neural network (GNN) is a special class of deep learning models that is 
 %     \item \textbf{Knowledge graph-based recommendation}: model the relationships between entities in a knowledge graph to make recommendations based on its structure.
 % \end{itemize}
 
-We sought inspiration from a variety of GNN architectures. Graph Convolutional Networks (GCN) uses convolutional layers to learn a hierarchical representation of the data, allowing it to effectively capture the complex relationships between nodes in the graph \cite{gcn}. GraphSAGE is a variant of GCN that uses a sample-and-aggregate strategy to learn the node representations \cite{graphsage}, while Graph Attention Networks (GAT) uses self-attention mechanisms to weight the importance of different nodes in the graph \cite{gat}. We studied and broke down the architecture design choices of these GCN variants and apply them as building blocks in the design of our networks. In addition, LightGCN \cite{lightgcn} was originally proposed to simplify the design of Neural Graph Collaborative Filtering (NGCF) \cite{ngcf}. Due to its simple and vanilla architectural design, it suits well as our GNN baseline and building foundation. 
+We sought inspiration from a variety of GNN architectures. Graph Convolutional Networks (GCN) uses convolutional layers to learn a hierarchical representation of the data, allowing it to effectively capture the complex relationships between nodes in the graph \cite{gcn}. GraphSAGE is a variant of GCN that uses a sample-and-aggregate strategy to learn the node representations \cite{graphsage}, while Graph Attention Networks (GAT) uses self-attention components to weight the importance of different nodes in the graph \cite{gat}. We studied and broke down the architecture design choices of these GCN variants and apply them as building blocks in the design of our networks. In addition, LightGCN \cite{lightgcn} was originally proposed to simplify the design of Neural Graph Collaborative Filtering (NGCF) \cite{ngcf}. Due to its simple and vanilla architectural design, it suits well as our GNN baseline and building foundation. 
 
 \section{Methods}
 
@@ -199,14 +184,13 @@ We sought inspiration from a variety of GNN architectures. Graph Convolutional N
 
 % \textit{describe embedding, inner product score, rank based on score}
 
-To implement the ranking framework formulated in Section \ref{intro}, we represent a user $u$ through an embedding $e_u=g(u)$, and an item $i$ through an embedding $e_i=g(i)$, where $g$ is an embedding function derived from a GNN. We then take $f=\langle\cdot{,}\cdot\rangle$ to be the inner product of embedding vectors, and thus $$\hat r_{ui} = \langle e_u {,} e_i \rangle$$ 
-For a specific user $u$, we obtain $$R_u =\{\hat r_{ui} : \hat r_{ui}=\langle e_u {,} e_i \rangle ~\forall i \}$$
-We then produce a ranking of all items for user $u$ by $$\text{Ranking}(u, I) = I[\text{argsort}(R_u)]$$ where $I$ is the list of all items.
+To implement the ranking framework formulated in Section \ref{intro}, we represent a user $u$ through an embedding $e_u=g(u)$, and an item $i$ through an embedding $e_i=g(i)$, where $g$ is an embedding function derived from a GNN. We then take $f=\langle\cdot{,}\cdot\rangle$ to be the inner product of embedding vectors, and thus $\hat r_{ui} = \langle e_u {,} e_i \rangle$.
+For a specific user $u$, we obtain $R_u =\{\hat r_{ui} : \hat r_{ui}=\langle e_u {,} e_i \rangle ~\forall i \}$. We then produce a ranking of all items for user $u$ by $\text{Ranking}(u, I) = I[\text{argsort}(R_u)]$ where $I$ is the list of all items.
 
 
-\subsection{Graph Node Embedding}
+\subsection{Graph Node Embedding} \label{gnn-paradigm}
 
-The key to the above ranking paradigm is the embedding function $g$ that we will implement using GNN. A graph embedding architecture typically consists of these four main mechanisms:
+The key to the above ranking paradigm is the embedding function $g$ that we will implement using GNN. A graph embedding architecture typically consists of these four main components:
 
 \begin{itemize}
     \item \textbf{Graph Construction}. This step constructs a graph from the data so that we can actually train our graph neural network. In the case of user-item collaborative filtering, the simplest paradigm is to construct a bipartite graph, with users belonging to one half and items belonging to the other, with edges signifying interactions. In sequential recommendation, one might use a directed graph to represent causal and temporal relations. In knowledge graph based recommendation, graphs may be augmented with information, and different types of nodes and edges may represent different types of knowledge present in the graph.
@@ -222,7 +206,7 @@ The key to the above ranking paradigm is the embedding function $g$ that we will
     \label{fig:user-item-interact-graph}
 \end{figure}
 
-In the following sub-sections, we separately explore different algorithms for each of the above mechanisms. Each combination of a Neighborhood Aggregation algorithm, an Information Update algorithm, and a Final Node Representation algorithm would yield a different GNN. 
+In the following sub-sections, we separately explore different algorithms for each of the above components. Each combination of a Neighborhood Aggregation algorithm, an Information Update algorithm, and a Final Node Representation algorithm would yield a different GNN. 
 
 \subsubsection{Graph Construction}
 
@@ -233,7 +217,7 @@ Wu, et. al., \cite{survey} notes that we can add edges or nodes to this graph to
 \subsubsection{Neighborhood Aggregation}
 \label{neighborhood_aggregation}
 
-We adopted two mechanisms to aggregate node information to compute embedding of a given layer. 
+We adopted two algorithms to aggregate node information to compute embedding of a given layer. 
 \begin{itemize}
     \item \textbf{Weighted Sum}, which is a simple weighted sum aggregator defined as: $$n_u^{(l+1)}=\sum_{i\in \mathcal{N}_u} \frac{1}{\sqrt{|\mathcal{N}_u|} \sqrt{|\mathcal{N}_i|}} h_i^{(l)} \text{ for } l \in 0, 1, \hdots, K - 1$$
     where $\frac{1}{\sqrt{|\mathcal{N}_u|} \sqrt{|\mathcal{N}_i|}}$ is the normalizing factor that adjusts the scale of embeddings based on graph connectivity, which is known as the renormalization trick proposed by GCN \cite{gcn}.
@@ -262,7 +246,7 @@ We adopted two mechanisms to aggregate node information to compute embedding of 
     Now with the attention weights, we compute the final embedding as follows: $$n_u^{(l + 1)} = \sigma ( \sum_{i\in \mathcal{N}_u} \alpha_{ui} W h_i^{(l)}  ) \text{ for } l \in 0, 1, \hdots, K - 1 $$ where we chose the nonlineariy $\sigma$ to be the Exponential Linear Function (ELU).
 \end{itemize}
 
-\subsubsection{Information Update}
+\subsubsection{Information Update} \label{info_update}
 
 For the Information Update module, we implemented three different algorithms:
 \begin{itemize}
@@ -394,7 +378,7 @@ where $\lambda$ is a tuning parameter for the $L_2$ regularization on the initia
 
 \section{Results} \label{results}
 
-\textit{Your experimental results. Show plots of the performance of your algorithms and interpret what they mean. Be sure to label and explain this clearly. Describe how the current results in each of the experiments align with your expectations. What metrics did you use for evaluation? How do your results compare to prior work?}
+% \textit{Your experimental results. Show plots of the performance of your algorithms and interpret what they mean. Be sure to label and explain this clearly. Describe how the current results in each of the experiments align with your expectations. What metrics did you use for evaluation? How do your results compare to prior work?}
 
 \subsection{Rank-based Metrics for Model Evaluation} \label{metrics}
 
@@ -402,30 +386,37 @@ where $\lambda$ is a tuning parameter for the $L_2$ regularization on the initia
 
 To evaluate our GNNs and benchmark it against the baselines, we will compare their performance in predicting the relative ranking of the top K items for a user. This is known as the Learning-to-Rank problem \cite{learning_to_rank}. As with most other problems, there is not a single metric that is the absolute best. We evaluate our models with four different rank-based metrics, namely Precision @ K, Recall @ K, Mean Average Precision (MAP) @ K, and Normalized Discounted Cumulative Gain (nDCG) @ K. Their exact mathematical defintiion can be found in Appendix \ref{rank-metrics-def}. Throughout this report, we set $K = 10$, which is a reasonable value for the movie recommendation setting.
 
-Note that different metrics may be better suited for different applications. For instance, MAP is a good metric when the order of the returned recommendation batch is not important whereas nDCG is preferable when we do care about the order. In fact, even for different recommendation stages inside a single application, different metrics may be better suited. Recall may be important for the initial retrieval stage while precision is more important for the final ranking stage. It's often helpful to examine multiple metrics together to understand the performance of a ranking algorithm holistically. Nevertheless, we place a higher emphasis on nDCG which is arguably the more well-rounded end-to-end ranking metric out of the four.
+Note that different metrics may be better suited for different applications. For instance, MAP is a good metric when the order of the returned recommendation batch is not important whereas nDCG is preferable when we do care about the order. In fact, even for different recommendation stages inside a single application, different metrics may be better suited. Recall may be important for the initial retrieval stage while precision is more important for the final ranking stage. It's often helpful to examine multiple metrics together to understand the performance of a ranking algorithm holistically. Nevertheless, we place a higher emphasis on nDCG and MAP which is arguably the more well-rounded, end-to-end, ranking-specific metric out of the four.
 
-\subsection{Rank-based Metrics for Top Performing Architectures}
+\subsection{Overall Top-Performing Architectures}
 
-\begin{figure}[H]
+We trained 2 (neighbor aggregation) * 3 (info update) * 4 (final node representation) * 10 (random seeds) = 240 GNNs with 50 epochs in total. The metrics of each network are averaged over the 10 random seeds. The full evaluation results can be found in Table \ref{tab:full-metrics} in the Appendix. 
+
+For each metric, we ranked the GNNs based on their performance and selected the best performing GNN out of all 240 GNNs. We then plotted all four metrics of these selected GNNs in Figure \ref{fig:metrics-overall}. We additionally plotted the metrics of the vanilla LightGCN and the best performing baselines (which happened to be SVD and kNN) as benchmarks for these top performing GNNs.
+% Out of all GNN configurations along with our baseline methods, we ordered them based on their performance in different metrics. Metrics of the top-performing GNNs in their own metrics category and other metrics, the vanilla LightGCN, and the best baselines SVD and kNN are plotted in Figure \ref{fig:metrics-overall}. 
+
+\begin{figure}[h]
     \centering
     \includegraphics[width=.8\textwidth]{figs/best_models_and_baselines.png}
-    \caption{}
+    \caption{Rank-based metrics of top-performing GNNs, LightGCN, and the best baselines.}
     \label{fig:metrics-overall}
 \end{figure}
 
+As discussed in section \ref{metrics}, we will prioritize nDCG@10 and MAP@10 in terms of analysis. Observe that the best-performing model for nDCG and MAP has attention as the neighbor aggregator, identity as the information updater, and attention as the final node representation. This model beats the vanilla LightGCN by 18.3\% in nDCG and 29.4\% in MAP, and beats the best baseline SVD by 90.5\% in nDCG and 175\% in MAP. Although the winning models for precision and recall are different than this one, our top-performing flavored models all beat the baseline SVD by a large margin and the vanilla LightGCN by a non-trivial margin. This shows that swapping vanilla GNN components out for more powerful ones indeed brings boosts in performance.
 
-\subsection{Rank-based Metrics for Individual Mechanisms}
+\subsection{Individual Components} \label{eval-individual-components}
 
-\subsubsection{With Vanilla Other Mechanisms}
+\subsubsection{Evaluating One-at-a-Time} \label{eval-one-at-a-time}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=.48\textwidth]{figs/neighbor_aggregator.png}
-    \includegraphics[width=.48\textwidth]{figs/info_updater.png}
-    \includegraphics[width=.48\textwidth]{figs/final_node_repr.png}
-    \caption{}
-    \label{fig:metrics-individual-mechanisms}
-\end{figure}
+
+
+In addition to the overall best architectures, we are also interested in understanding the individual contributions of the algorithms in each of the three components in Section \ref{gnn-paradigm}. To this end, for each component, we plotted the rank-based metrics of the different algorithms while fixing the other two components to their simplest forms. For example, when evaluating the Neighbor Aggregation component, we fix the Information Update component to \textit{Identity} and the Final Node Representation component to \textit{Mean}. The results are shown in Figure \ref{fig:metrics-individual-components}.
+
+For neighbor aggregation, \textit{Attention} beats \textit{Degree Norm} by 6.2\% in precision, 4.2\% in recall, 7.1\% in nDCG, and 5.4\% in MAP.
+
+For information update, we see that \textit{Single Linear} performs the best in all four metrics. It beats \textit{Multiple Linear} and \textit{Identity} by 4.1\% and 18.0\% in precision, 4.2\% and 19.0\% in recall, 7.1\% and 20.4\% in nDCG, and 10.8\% and 32.6\% in MAP, respectively.
+
+For final node representation, ... (Hiroshi)
 
 % \begin{figure}[H]
 %     % \centering
@@ -441,32 +432,12 @@ Note that different metrics may be better suited for different applications. For
 %     \label{fig:metrics-final-node-repr}
 % \end{figure}
 
-\subsubsection{Average Normalized Ranking}
+\subsubsection{Evaluating across All Combinations}
 
-% Please add the following required packages to your document preamble:
-% \usepackage{multirow}
-\begin{table}[H]
-\centering
-\begin{tabular}{|l|llll|}
-\hline
-Ranked by                       &                                                                                                           &                                             & Mean           & Stddev \\ \hline
-\multirow{9}{*}{NDCG @ 10}      & \multicolumn{1}{l|}{\multirow{2}{*}{\begin{tabular}[c]{@{}l@{}}Neighbor\\ Aggregator\end{tabular}}}       & \multicolumn{1}{l|}{\textbf{attention}}     & \textbf{0.413} & 0.313  \\ \cline{3-5} 
-                                & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{degree norm}            & 0.545          & 0.244  \\ \cline{2-5} 
-                                & \multicolumn{1}{l|}{\multirow{3}{*}{\begin{tabular}[c]{@{}l@{}}Information\\ Updater\end{tabular}}}       & \multicolumn{1}{l|}{\textbf{single linear}} & \textbf{0.396} & 0.218  \\ \cline{3-5} 
-                                & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{multi linear}           & 0.500          & 0.222  \\ \cline{3-5} 
-                                & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{identity}               & 0.542          & 0.376  \\ \cline{2-5} 
-                                & \multicolumn{1}{l|}{\multirow{4}{*}{\begin{tabular}[c]{@{}l@{}}Final Node\\ Representation\end{tabular}}} & \multicolumn{1}{l|}{\textbf{attention}}     & \textbf{0.271} & 0.277  \\ \cline{3-5} 
-                                & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{mean}                   & 0.312          & 0.175  \\ \cline{3-5} 
-                                & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{weighted}               & 0.535          & 0.195  \\ \cline{3-5} 
-                                & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{concat}                 & 0.799          & 0.106  \\ \hline
-\end{tabular}
-\caption{}
-\label{tab:mechanisms-avg-ranking-ndcg}
-\end{table}
+To compare all combinations of algorithms for different components, we define Average Normalized Ranking (ANR) as follows: for each component, we fix an algorithm and vary the other components and compute an average ranking of GNNs with the fixed component. We then normalize this average ranking over all possible combinations of component algorithms, i.e. 2*3*4=24 in our case.  A lower ANR means the GNN is ranked more to the front and is thus better. 
 
-Table \ref{tab:mechanisms-avg-ranking}
+Table \ref{tab:components-avg-ranking} contains the results of ANR evaluated for all component algorithms with different rank-based metrics. Despite some variance in rankings, overall on average, \textit{attention} wins for neighbor aggregation, \textit{single linear} wins for information update, and \textit{attention} wins for final node representation. The former two agree with the results in \ref{eval-one-at-a-time} while the third differs. We discuss this disparity in section \ref{final-node-repr-discussion}.
 
-\textit{compares across all mechanism combinations}
 
 % \subsection{LightGCN: Model Performance Evaluation} \label{lightgcn-eval}
 
@@ -506,27 +477,54 @@ Table \ref{tab:mechanisms-avg-ranking}
 
 \section{Discussion and Analysis}
 
-\textit{Analyze your model and results. Highlight a few limitations of your approach (e.g., strong assumptions you had to make, constraints, when your method did not work in practice, etc.). Do
-the results and the explanation provide insights into the ML models or the environment that you were dealing with? Comment on whether you think there is a way to further improve your method to eliminate these limitations.}
+% \textit{Analyze your model and results. Highlight a few limitations of your approach (e.g., strong assumptions you had to make, constraints, when your method did not work in practice, etc.). Do
+% the results and the explanation provide insights into the ML models or the environment that you were dealing with? Comment on whether you think there is a way to further improve your method to eliminate these limitations.}
 
 \subsection{GNN Paradigm: Analysis of the Individual Components}
 
-\subsubsection{Neighbor Aggregation Algorithms (Tianyu)}
+In the sections below, we separately analyze the performance of the different algorithm in each of the four components of our GNN paradigm. We also discuss the limitations of each component and how they can be improved. Graph construction will be discussed separately.
 
-\subsubsection{Information Update Algorithms (Albert)}
+\subsubsection{Neighbor Aggregation}
+
+Recall from section \ref{eval-individual-components}, the attention mechanism edges over weighted sum when it comes to neighbor aggregation. With attention, each node in the graph is associated with a set of weights, or attention coefficients, that determines how much influence it has on the representation of other nodes. This allows the attention mechanism to selectively weight different node-to-node relationships based on their neighbors' embedding, giving them a more expressive power than the simple weighted average.
+
+Additionally, although we did not implement in this project, the attention mechanism could readily be extended to become multi-head attention, which allows attention to attend to different parts of the graph simultaneously and integrate information from multiple perspectives. This could potentially help the GNN learn more robust and accurate node representations.
+
+\subsubsection{Information Update}
+
+Recall from Section \ref{info_update} that we have three different algorithms for the Information Update step: \textit{Multiple Linear}, \textit{Single Linear}, and \textit{Identity}, and we found in Section \ref{eval-individual-components} that \textit{Single Linear} outperformed \textit{Multiple Linear} and \textit{Identity} by a non-trivial margin in all 4 metrics.
+
+% Fixing the Neighbor Aggregator and the Final Node Representation algorithm to be the simplest implementation (i.e. \textit{Degree normalization} and \textit{Mean} respectively), we plotted the rank-based metrics for these three Information Update algorithms in Figure \ref{fig:metrics-individual-components}. As we can see, \textit{Single Linear} performs the best in all four metrics. In particular, it beats \textit{Multiple Linear} and \textit{Identity} by 4.1\% and 18.0\% in Precision @ K, 4.2\% and 19.0\% in Recall @ K, 7.1\% and 20.4\% in nDCG @ K, and 10.8\% and 32.6\% in MAP @ K, respectively.
+
+This is somewhat surprising since \textit{Single Linear} has fewer parameters than \textit{Multiple Linear} and yet still achieved better performance. One potential explanation is that \textit{Multiple Linear} introduces too many unique non-linear transformation in between the embeddings and thus caused the GNN to overfit to the training set. In particular, \textit{Multiple Linear} updates each embeddings layer with a different non-linear transformation, while \textit{Single Linear} uses the same non-linear transformation to update every embedding layer. In this sense, \textit{Single Linear} strikes the best balance between \textit{Multiple Linear} and \textit{Identity} in terms of model complexity, showing that there is room for improvement in the Information Update step for LightGCN as long as the transformation is not overparameterized relative to the data complexity.
 
 
+\subsubsection{Final Node Representation} \label{final-node-repr-discussion}
 
-\subsubsection{Final Node Representation Algorithms (Hiroshi)}
+There are two contrasting results that were obtained while testing different final node representation algorithms. Figure \ref{fig:metrics-individual-components} shows that using the \textit{mean} algorithm is far superior to the other algorithms, with \textit{attention} as second, \textit{weighted} as third, and \textit{concat} as last. These results were obtained by fixing the other components to their simplest: using \textit{degree norm} for aggregation and \textit{identity} for information updater. However, Table \ref{tab:components-avg-ranking} gives a slightly different result, where \textit{attention} is superior to \textit{mean}, while \textit{weighted} and \textit{concat} stays at the bottom of the list. This suggests that overall when we consider the variety of other components, the \textit{attention} algorithm prevails. This is also supported by Figure \label{fig:metrics-overall}, where we see more models using \textit{attention} achieving the highest metrics. We conclude that \textit{attention} generally improves very slightly upon LightGCN's original model, but there could be situations, possibly due to overfitting, where the \textit{mean} algorithm still prevails. We will recommend using the \textit{attention} algorithm since it is more versatile when paired with other algorithms.
+
 
 \subsubsection{A Note on Graph Construction (Hiroshi)}
 
-\textit{a brief discussion on why it didn't work should suffice since we didnt systematically evaluate this}
+Although this was on our agenda, we ultimately abandoned this idea since it produced very bad results. Using \textit{degree norm}, \textit{identity}, and \textit{mean}, the raw bipartite obtained an NDCG of 0.15, while the augmented graph using genre features obtained an NDCG of 0.04, which is almost 4x worse.
 
 \subsection{Overall Best-Performing Architectures}
 
 
 \subsection{Limitations and Future Work}
+
+% While we have exciting discoveries, we see some mixed messages that leave us pondering.
+
+While our results <fill in the central msg of our report>, we do want to note two limitations in our methods:
+
+\begin{itemize}
+    \item \textbf{Small Dataset}: The Movielens100k dataset used in our experiments is relatively small and could be considered "too easy" for GNNs. To truly benchmark the capabilities of these complex models, we should try larger and more challenging datasets, such as the Movielens 1M dataset and other click-based datasets such as \href{http://jmcauley.ucsd.edu/data/amazon/links.html}{Amazon} and \href{https://www.yelp.com/dataset}{Yelp}. These more difficult datasets also provide additional node features for users and items that GNNs can leverage, which is not present in the Movielens100k dataset.
+    \item \textbf{Overfitting}: In our experiments, we fixed all GNNs to train for 50 epochs. Since the MovieLens100K dataset is small, some of our more complex GNNs have shown signs of overfitting. For example, we observed that the performance of the "\textit{Attention Aggregator} + \textit{Multiple Linear} + \textit{Attention Representation}" architecture started decreasing after 30 epochs. To address this issue, we should either add some regularization mechanism (e.g. dropout layers) to our GNNs or implement early stopping during training to prevent overfitting. Unfortunately, we did not have time to implement these techniques and re-run the experiments in this project.
+    % \item 
+    % \item do not quite understand the interaction between components. in average normed ranking, we see high variance, and the best performing algos for each component combined does not produce the best result. should explore this aspect.
+\end{itemize}
+
+For future work, one interesting direction is to understand the interaction between the three components of our GNN architecture. As shown in Table \ref{tab:components-avg-ranking}, most of our component algorithms exhibit very high variance in their performance when varying the other two components. On a similar note, we also found that combining the best performing algorithm from each component does not produce the best overall results. For example, Figure \ref{fig:metrics-individual-components} shows that the best performing algorithms for the three components are \textit{Attention} for aggregation, \textit{Single Linear} for information update, and \textit{Mean} for final node representation. However, when we combine these three algorithms, we get a GNN that performs worse than many other GNNs. The best performing GNN is in fact the one that uses \textit{Attention} for aggregation, \textit{Identity} for information update, and \textit{Attention} for final node representation. These behaviors collectively suggest that there is some synergy between the three components that we have not yet discovered. It would be interesting to explore what causes the algorithms to collectively perform better or worse than their individual performance.
 
 % Table \ref{tab:rmse_results}, \ref{tab:mae_results} show the 5-fold cross-validation RMSE and MAE of the baseline algorithms, respectively. Figure \ref{fig:rmse-baselines}, \ref{fig:mae-baselines} plots the mean RMSE and MAE against the baseline algorithms, respectively.
 
@@ -542,7 +540,7 @@ the results and the explanation provide insights into the ML models or the envir
 
 % For the rest of the work, we each will first implement a GNN, e.g. GraphSAGE for Albert, GGNN for Hiroshi, and GAT for Tianyu, and evaluate their performance in similar methods as above. This will be done by Nov 11. Then, we individually will explore ways to integrate GNN into traditional neural nets to create more complex architectures that potentially perform better and offers opportunities for more sophisticated analyses (e.g. an ablation study by toggling the GNN module in the whole net on and off). This will be done by Dec 2. We will work on the final draft in the last week leading to Dec 8, the submission deadline.
 
-Every member of the team contributed heavily to this project. We split the implementation of network architectural mechanisms with Tianyu on neighbor aggregation, Albert on information update, and Hiroshi on final node representation and graph construction. Apart from the core code, Albert was heavily involved with the initial setup of the training and evaluation pipeline and results plotting functionalities, Tianyu with experiment infrastructure and metrics analysis, and Hiroshi with auto experimentation functionalities and metrics processing. We co-authored this project's final report.
+Every member of the team contributed heavily to this project. We split the implementation of network architectural components with Tianyu on neighbor aggregation, Albert on information update, and Hiroshi on final node representation and graph construction. Apart from the core code, Albert was heavily involved with the initial setup of the training and evaluation pipeline and results plotting functionalities, Tianyu with experiment infrastructure and metrics analysis, and Hiroshi with auto experimentation functionalities and metrics processing. We co-authored this project's final report.
 
 \section{Access to Code}
 
@@ -553,6 +551,7 @@ The code to train, plot, and analyze the models is published at the \href{https:
 \newpage
 
 \section{Appendix}
+
 
 \subsection{Rank-based Metrics Definitions} \label{rank-metrics-def}
 
@@ -589,6 +588,8 @@ $$
 
 
 \subsection{Additional Baseline Evaluations} \label{additional-baseline-eval}
+
+
 
 \begin{table}[H]
     \centering
@@ -630,6 +631,30 @@ $$
         \end{tabular}
     \caption{5 Fold Cross Validation MAE of Baseline Algorithms}
     \label{tab:mae_results}
+\end{table}
+
+\begin{table}[H]
+    \centering
+        \begin{tabular}{|c c c c c|} 
+         \hline
+         Model & MAP@10 & nDGC@10 & Precision@10 & Recall@10 \\ [0.5ex] 
+         \hline\hline
+         % LightGCN & 0.034 & 0.153 & 0.145 & 0.093 \\ 
+         % \hline
+         SVD & \bfseries 0.016 & \bfseries 0.095 & \bfseries 0.087 & 0.037 \\
+         \hline
+         NMF & 0.002 & 0.024 & 0.025 & 0.010 \\ 
+         \hline
+         SlopeOne & 0.001 & 0.010 & 0.012 & 0.003 \\ 
+         \hline
+         kNN & 0.012 & 0.073 & 0.084 & \bfseries 0.049 \\ 
+         \hline 
+         NormalPredictor & 0.001 & 0.013 & 0.014 & 0.004 \\[1ex] 
+         \hline
+        \end{tabular}
+    \title{sdas}
+    \caption{Rank-based evaluation metrics on baselines trained on the \texttt{movielens-100K} dataset. For a detailed definition of these metrics, see section \ref{rank-metrics-def}}
+    \label{tab:baseline-ranking-metrics}
 \end{table}
 
 % \begin{table}[H]
@@ -684,7 +709,52 @@ $$
 % \end{figure}
 
 
-\subsection{Additional GNN Evaluation Tables and Plots} \label{additional-gnn-eval}
+\subsection{Additional GNN Evaluations} \label{additional-gnn-eval}
+
+
+\begin{sidewaystable}[]
+\centering
+\begin{tabular}{lllllllll}
+\hline
+recall  & recall\_std & ndcg    & ndcg\_std & precision & precision\_std & map     & map\_std & modelname                             \\ \hline
+0.10197 & 0.00312     & 0.17213 & 0.00454   & 0.15770   & 0.00288        & 0.04231 & 0.00186  & attention|direct|attention            \\ \hline
+0.09891 & 0.00290     & 0.16643 & 0.00493   & 0.15381   & 0.00479        & 0.03965 & 0.00129  & attention|direct|mean                 \\ \hline
+0.09957 & 0.00490     & 0.16342 & 0.00668   & 0.15064   & 0.00547        & 0.04003 & 0.00253  & degree\_norm|multi\_linear|attention  \\ \hline
+0.09546 & 0.00626     & 0.16035 & 0.00844   & 0.14996   & 0.00731        & 0.03747 & 0.00330  & attention|single\_linear|attention    \\ \hline
+0.09681 & 0.00447     & 0.16008 & 0.00644   & 0.14871   & 0.00475        & 0.03803 & 0.00287  & attention|multi\_linear|attention     \\ \hline
+0.09529 & 0.00522     & 0.15943 & 0.00961   & 0.14765   & 0.00720        & 0.03778 & 0.00335  & degree\_norm|single\_linear|attention \\ \hline
+0.09647 & 0.00382     & 0.15925 & 0.00612   & 0.14642   & 0.00478        & 0.03866 & 0.00244  & degree\_norm|single\_linear|mean      \\ \hline
+0.09510 & 0.00188     & 0.15700 & 0.00351   & 0.14615   & 0.00316        & 0.03692 & 0.00104  & degree\_norm|direct|mean              \\ \hline
+0.09434 & 0.00529     & 0.15596 & 0.00742   & 0.14409   & 0.00602        & 0.03750 & 0.00296  & degree\_norm|single\_linear|weighted  \\ \hline
+0.09163 & 0.00365     & 0.15198 & 0.00604   & 0.14227   & 0.00551        & 0.03509 & 0.00196  & attention|single\_linear|mean         \\ \hline
+0.08576 & 0.00660     & 0.14305 & 0.01102   & 0.13423   & 0.00939        & 0.03243 & 0.00385  & attention|single\_linear|weighted     \\ \hline
+0.08738 & 0.00365     & 0.14268 & 0.00641   & 0.13383   & 0.00557        & 0.03281 & 0.00183  & degree\_norm|multi\_linear|mean       \\ \hline
+0.08416 & 0.00351     & 0.13826 & 0.00633   & 0.13127   & 0.00481        & 0.03089 & 0.00197  & attention|multi\_linear|mean          \\ \hline
+0.08223 & 0.01692     & 0.13592 & 0.02698   & 0.12694   & 0.02392        & 0.03156 & 0.00806  & attention|direct|weighted             \\ \hline
+0.08084 & 0.00522     & 0.13382 & 0.00881   & 0.12497   & 0.00772        & 0.03043 & 0.00265  & degree\_norm|multi\_linear|weighted   \\ \hline
+0.07589 & 0.00711     & 0.12328 & 0.01241   & 0.11774   & 0.01024        & 0.02697 & 0.00357  & attention|multi\_linear|weighted      \\ \hline
+0.05778 & 0.00478     & 0.09970 & 0.00873   & 0.09596   & 0.00796        & 0.01951 & 0.00218  & degree\_norm|single\_linear|concat    \\ \hline
+0.05954 & 0.00575     & 0.09824 & 0.00747   & 0.09578   & 0.00729        & 0.01933 & 0.00245  & degree\_norm|multi\_linear|concat     \\ \hline
+0.05250 & 0.00264     & 0.08857 & 0.00344   & 0.08705   & 0.00357        & 0.01674 & 0.00103  & attention|single\_linear|concat       \\ \hline
+0.05203 & 0.00318     & 0.08670 & 0.00512   & 0.08497   & 0.00420        & 0.01660 & 0.00155  & attention|multi\_linear|concat        \\ \hline
+0.05212 & 0.00220     & 0.08257 & 0.00418   & 0.08143   & 0.00398        & 0.01647 & 0.00090  & degree\_norm|direct|attention         \\ \hline
+0.02689 & 0.00161     & 0.04801 & 0.00158   & 0.04774   & 0.00168        & 0.00780 & 0.00047  & degree\_norm|direct|weighted          \\ \hline
+0.02167 & 0.00176     & 0.04274 & 0.00216   & 0.04332   & 0.00251        & 0.00615 & 0.00051  & degree\_norm|direct|concat            \\ \hline
+0.02428 & 0.00225     & 0.03939 & 0.00286   & 0.04002   & 0.00276        & 0.00637 & 0.00077  & attention|direct|concat               \\ \hline
+\end{tabular}
+\caption{Rank-based metrics of GNNs with all combinations of architectural choices. Each model is trained over 50 epochs on 10 random seeds and the metrics are averaged over the random seeds.}
+\label{tab:full-metrics}
+\end{sidewaystable}
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.49\textwidth]{figs/neighbor_aggregator.png}
+    \includegraphics[width=.49\textwidth]{figs/info_updater.png}
+    \includegraphics[width=.49\textwidth]{figs/final_node_repr.png}
+    \caption{The rank-based metrics of the different algorithms in each of the three components of our GNNs. Each plot assumes the other two components are fixed to their simplest forms. For example, when evaluating the Information Update component, we fix the Neighbor Aggregation component to \textit{Degree Norm} and the Final Node Representation component to \textit{Mean}.}
+    \label{fig:metrics-individual-components}
+\end{figure}
 
 % Please add the following required packages to your document preamble:
 % \usepackage{multirow}
@@ -731,7 +801,7 @@ Ranked by                       &                                               
                                 & \multicolumn{1}{l|}{}                                                                                     & \multicolumn{1}{l|}{concat}                 & 0.799          & 0.106  \\ \hline
 \end{tabular}
 \caption{Average normalized ranking of GNN with various architectural choices evaluated under different rank-based metrics. For each architecture choice, e.g., attention as the neighbor aggregator, we fix this choice and vary the other two choices and compute an average ranking of GNNs with attention as the neighbor aggregator. We then normalize this average ranking with all possible combinations of architectural choices.  A lower score means the GNN is ranked more to the front and is thus better. }
-\label{tab:mechanisms-avg-ranking}
+\label{tab:components-avg-ranking}
 \end{table}
 
 \pagebreak
