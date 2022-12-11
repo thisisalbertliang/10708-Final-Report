@@ -135,6 +135,7 @@ backgroundcolor = \color{light-gray},
 % sss
 % \end{abstract}
 
+\vspace{-.8cm}
 
 \section{Introduction} \label{intro}
 
@@ -144,18 +145,16 @@ Recommendation systems are deployed to serve personalized content that is intere
 
 One prominent recommendation problem is the ranking problem: given a set of items for a specific user, we want to rank the items for the user and select a top subset of items in a way that maximizes the relevance of the selected items to the user. This matches the upper-level application logic that, for example, only a small number of videos can be displayed on a user's home feed. More concretely, we have two inputs $u,i$ and an output $r_{ui}$, where $u$ stands for a user, $i$ stands for an item, and $r_{ui}$ is the relevance of the item to the user. We wish to learn a function $f(u,i)$ such that $\hat{r}_{ui}=f(u,i)$ is as close as possible to $r_{ui}$. Given the $r_{ui}$ values for a given $u$ and varying $i$, we are then able to rank them in descending order to obtain items that will most likely interest the given user and recommend those top-ranked items.
 
-Here we will use the MovieLens 100K \cite{movielens} dataset to train and evaluate our models. MovieLens is a series of datasets collected from the MovieLens website where users have rated movies on a rating scale of 1 to 5. These datasets are widely used as benchmark datasets for recommendation systems \cite{DBLP:journals/corr/abs-2011-02260}, making it great forr comparing our models to others. There are different sized MovieLens datasets, and we will use the smallest but most commonly used 100k dataset since it will train faster with limited hardware and have more comparisons available. 
-
-Contextualizing the ranking problem with the MovieLens dataset, $u$ corresponds to users, $i$ corresponds to movies, and $r_{ui}$ corresponds to the rating that user $u$ gave to movie $i$, where $r_{ui}\in\{1,2,3,4,5\}$. However, in this paper, we will discard the concrete value of the rating, and let $r_{ui}=1$ if user $u$ has rated movie $i$ and $0$ otherwise. This modified target is a click-through rate (CTR) type of target, from which the probability of a user interacting with an item, i.e. having watched the movie, can be inferred. We made this choice because CTR could often be a more interesting and useful target to predict in actual industrial applications than regressing on numeric rating \cite{ctr}.
+Here we will use the MovieLens 100K \cite{movielens} dataset to train and evaluate our models. MovieLens is a series of datasets collected from the MovieLens website where users have rated movies on a rating scale of 1 to 5. These datasets are widely used as benchmark datasets for recommendation systems \cite{DBLP:journals/corr/abs-2011-02260}, making it great for comparing our models to others. In MovieLens, $u$ corresponds to users, $i$ corresponds to movies, and $r_{ui}$ corresponds to the rating that user $u$ gave to movie $i$, where $r_{ui}\in\{1,2,3,4,5\}$. However, in this paper, we will discard the concrete value of the rating, and let $r_{ui}=1$ if user $u$ has rated movie $i$ and $0$ otherwise. This modified target is a click-through rate (CTR) type of target, from which the probability of a user interacting with an item, i.e. having watched the movie, can be inferred. We made this choice because CTR could often be a more interesting and useful target to predict in actual industrial applications than regressing on numeric rating \cite{ctr}.
 
 
 \section{Background}
 
 % \textit{TODO: Briefly summarize the findings from your midway report.}
 
-We implemented five baseline algorithms in the midway report: singular value decomposition (SVD), non-negative matrix factorization (NMF), slope one, k-nearest neighbors (kNN), and random guessing. We benchmarked them on MovieLens with regression metrics RMSE and MAE and obtained results in Table \ref{tab:rmse_results}, \ref{tab:mae_results}. SVD beats the other baselines in both RMSE and MAE. After the midway report, we additionally ran ranking-based metrics on the baseline methods and the results are summarized in Table \ref{tab:baseline-ranking-metrics}. Again, SVD outperforms other baselines except for Recall where kNN wins. Further, we observed that some of these algorithms produced non-trivial improvements to others, and determined there was likely room for improvement even upon SVD.
+We implemented five baseline algorithms in the midway report: singular value decomposition (SVD), non-negative matrix factorization (NMF), slope one, k-nearest neighbors (kNN), and random guessing. We benchmarked them on MovieLens with the regression metrics RMSE and MAE and obtained results in Table \ref{tab:rmse_results}, \ref{tab:mae_results}. SVD beats the other baselines in both RMSE and MAE. After the midway report, we additionally ran ranking-based metrics on the baseline methods. The results are summarized in Table \ref{tab:baseline-ranking-metrics}. Again, SVD outperforms other baselines except for \textit{Recall} where kNN wins. Further, we observed that some of these algorithms produced non-trivial improvements to others, and determined there was likely room for improvement even upon SVD.
 
-We noted that traditional methods are often limited in expressivity since the models are relatively simple, for example a single matrix. Neural networks by themselves also lack the structure needed to take advantage of the complex structure between user-item ratings and features. We hypothesized that the best of two worlds might be attainable using graph neural networks.
+We noted that traditional methods are often limited in expressivity since the models are relatively simple, e.g. a single matrix. Neural networks by themselves also lack the structure needed to take advantage of the complex structure between user-item ratings and features. We hypothesized that the best of two worlds might be attainable using graph neural networks.
 
 Our dataset is inherently structured as a bipartite graph, with one party the users and the other party the items. Edges between these nodes thus correspond to the ratings user gave to items. Then the message passing and aggregation algorithms applied to this graph is a combination of both the traditional neighborhood method and a neural network. 
 
@@ -164,7 +163,10 @@ Our dataset is inherently structured as a bipartite graph, with one party the us
 
 % \textit{Previous work related to your topic that you may have referenced to help guide your project.}
 
-A graph neural network (GNN) is a special class of deep learning models that is design to operate on graph-structured data. Recently, GNNs have been shown to be effective for a wide range of recommendation tasks. A survey on GNNs proposed a taxonomy of the usage of GNN in recommender systems \cite{survey}: \textbf{user-item collaborative filtering} (model the relationships between users and items to make recommendations based on the preferences of similar users), \textbf{sequential recommendation} (model the sequence of items that a user has interacted with in the past to make recommendations based on their previous behavior), \textbf{social recommendation} (model the social relationships between users to make recommendations based on the preferences of friends or other users in a user's social network), and \textbf{knowledge graph-based recommendation} (model the relationships between entities in a knowledge graph to make recommendations based on its structure). We take on the approach to employ GNNs as user-item collaborative filtering models. 
+% A graph neural network (GNN) is a special class of deep learning models that is design to operate on graph-structured data. Recently, GNNs have been shown to be effective for a wide range of recommendation tasks. A survey on GNNs proposed a taxonomy of the usage of GNN in recommender systems \cite{survey}: \textbf{user-item collaborative filtering} (model the relationships between users and items to make recommendations based on the preferences of similar users), \textbf{sequential recommendation} (model the sequence of items that a user has interacted with in the past to make recommendations based on their previous behavior), \textbf{social recommendation} (model the social relationships between users to make recommendations based on the preferences of friends or other users in a user's social network), and \textbf{knowledge graph-based recommendation} (model the relationships between entities in a knowledge graph to make recommendations based on its structure). We take on the approach to employ GNNs as user-item collaborative filtering models. 
+
+
+A graph neural network (GNN) is a special class of deep learning model that is designed to operate on graph-structured data. Recently, GNNs have been shown to be effective for a wide range of recommendation tasks. A survey on GNNs proposed a taxonomy of the usage of GNN in recommender systems \cite{survey}: user-item collaborative filtering, sequential recommendation, social recommendation, and knowledge graph-based recommendation. We take on the approach to employ GNNs as part of user-item collaborative filtering, which models the relationships between users and items in order to make recommendations based on the preferences of similar users.
 
 % \begin{itemize}
 %     \item \textbf{User-item collaborative filtering}: model the relationships between users and items to make recommendations based on the preferences of similar users.
@@ -173,7 +175,7 @@ A graph neural network (GNN) is a special class of deep learning models that is 
 %     \item \textbf{Knowledge graph-based recommendation}: model the relationships between entities in a knowledge graph to make recommendations based on its structure.
 % \end{itemize}
 
-We sought inspiration from a variety of GNN architectures. Graph Convolutional Networks (GCN) uses convolutional layers to learn a hierarchical representation of the data, allowing it to effectively capture the complex relationships between nodes in the graph \cite{gcn}. GraphSAGE is a variant of GCN that uses a sample-and-aggregate strategy to learn the node representations \cite{graphsage}, while Graph Attention Networks (GAT) uses self-attention components to weight the importance of different nodes in the graph \cite{gat}. We studied and broke down the architecture design choices of these GCN variants and apply them as building blocks in the design of our networks. In addition, LightGCN \cite{lightgcn} was originally proposed to simplify the design of Neural Graph Collaborative Filtering (NGCF) \cite{ngcf}. Due to its simple and vanilla architectural design, it suits well as our GNN baseline and building foundation. 
+We sought inspiration from a variety of GNN architectures. Graph Convolutional Networks (GCN) uses convolutional layers to learn a hierarchical representation of the data, allowing it to effectively capture the complex relationships between nodes in the graph \cite{gcn}. GraphSAGE is a variant of GCN that uses a sample-and-aggregate strategy to learn the node representations \cite{graphsage}, while Graph Attention Networks (GAT) uses self-attention components to weight the importance of different nodes in the graph \cite{gat}. We studied and broke down the architecture design choices of these GCN variants and apply them as building blocks in the design of our networks. In addition, LightGCN \cite{lightgcn} was originally proposed to simplify the design of Neural Graph Collaborative Filtering (NGCF) \cite{ngcf}. Due to its simple architectural design, we used it as the foundation upon which we build our algorithms.
 
 \section{Methods}
 
@@ -199,18 +201,11 @@ The key to the above ranking paradigm is the embedding function $g$ that we will
     \item \textbf{Final Node Representation}. This step combines all previous embeddings (i.e. every layer) into a single, final embedding for each node. For example, one could concatenate together the embeddings from every layer. Once the final node representation is computed, it is used as input to a prediction model.
 \end{itemize}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=.6\textwidth]{figs/ngcf-architecture.png}
-    \caption{An illustration of the user-item interaction graph and the high-order connectivity by \cite{ngcf}. The figure visualizes how the embeddings for user $u_1$ are propagated through the graph.}
-    \label{fig:user-item-interact-graph}
-\end{figure}
-
-In the following sub-sections, we separately explore different algorithms for each of the above components. Each combination of a Neighborhood Aggregation algorithm, an Information Update algorithm, and a Final Node Representation algorithm would yield a different GNN. 
+Figure \ref{fig:user-item-interact-graph} shows a visualization of some of the above components. In the following sub-sections, we separately explore different algorithms for each of the components. Each combination of them would yield a different GNN. 
 
 \subsubsection{Graph Construction}
 
-The graph construction to choose from depends heavily on what information is given in the dataset. In Movielens 100k, this consists almost entirely of users' ratings on movies, with minimal data on attributes of each user or each movie. Since the useful information consists only of raw user-item interactions, we are only able to do user-item collaborative filtering. Hence, we will start with a bipartite user-item interaction graph.
+The graph construction to choose from depends heavily on what information is given in the dataset. In Movielens 100k, this consists almost entirely of users' ratings on movies, with minimal data on attributes of each user or each movie. Due to this we are only able to do user-item collaborative filtering, so we will start with a bipartite user-item interaction graph.
 
 Wu, et. al., \cite{survey} notes that we can add edges or nodes to this graph to increase the connectivity between certain nodes. Multi-GCCF \cite{multigccf} adds edges between two-hop neighbors to facilitate information passing among related users. However since our architecture is based on LightGCN which passes unaltered information very well along paths, it is not theoretically necessary to further increase connectivity. DGCF \cite{dgcf} adds nodes to express intent and then further processes the graph. We will adapt this idea to address one of our weaknesses with our proposed model, which is that it does not take into consideration any user or item features. We add feature nodes to the graph and for each feature node add edges to all users or items whose features are sufficiently close. This may be done using any clustering algorithm, such as k-means. Here since we do not have much features, we directly featurize the items based on its reported genre. Each movie genre is given a node, and movies within the same genre are connected to it. The intention is that this allows users nodes to receive information from movies of similar genres to the ones the user rated, which users might prefer.
 
@@ -222,19 +217,7 @@ We adopted two algorithms to aggregate node information to compute embedding of 
     \item \textbf{Weighted Sum}, which is a simple weighted sum aggregator defined as: $$n_u^{(l+1)}=\sum_{i\in \mathcal{N}_u} \frac{1}{\sqrt{|\mathcal{N}_u|} \sqrt{|\mathcal{N}_i|}} h_i^{(l)} \text{ for } l \in 0, 1, \hdots, K - 1$$
     where $\frac{1}{\sqrt{|\mathcal{N}_u|} \sqrt{|\mathcal{N}_i|}}$ is the normalizing factor that adjusts the scale of embeddings based on graph connectivity, which is known as the renormalization trick proposed by GCN \cite{gcn}.
 
-    Notice that in this setting, the neighborhood aggregation function is just a linear transformation of the previous layer. Therefore, we can derive a closed form solution of the aggregated representation in terms of the previous layer in matrix notation, which is significantly faster to compute compared to the naive implementation of the weighted sum as a for loop. Specifically, let $R \in \mathbb{R}^{m \times n}$ denote the interaction matrix where $R_{ui}$ is 1 if user $u$ has a rating for movie $i$ and 0 otherwise. Here $m$ and $n$ are the number of users and movies respectively. Then, the adjacency matrix of the bipartite user-movie interaction graph can be written as
-    \begin{align*}
-        A =
-        \begin{pmatrix}
-        \mathbf{0} & R \\
-        R^\top & \mathbf{0}
-        \end{pmatrix}
-    \end{align*}
-    Treating this as a classical matrix factorization problem, we arrive at the closed form solution of the aggregation representation:
-    \begin{align*}
-        N^{(l+1)} = \left( D^{-\frac{1}{2}} A D^{-\frac{1}{2}} \right) H^{(l)} \text{ for } l \in 0, 1, \hdot, K - 1
-    \end{align*}
-    where $D \in \mathbb{R}^{(m+n) \times (m+n)}$ is a diagonal matrix such that the $i$th diagonal entry denotes the number of non-zero entries in the $i$th row of $A$.
+    Notice that in this setting, the neighborhood aggregation function is just a linear transformation of the previous layer. Therefore, we can derive a closed-form solution of the aggregated representation in terms of the previous layer in matrix notation. See details in Appendix \ref{vec-degree-norm}.
     
     \item \textbf{Attention}, which uses the attention mechanism to compute weights for each node. Specifically, we add a graph attention layer that borrows its design from GAT \cite{gat}. 
     
@@ -260,10 +243,10 @@ For the Information Update module, we implemented three different algorithms:
     h_u^{(l+1)} = \mbox{LeakyRelu}(n_u^{(l)} W + b) \text{ for } l \in 0, 1, ..., K - 1
     $$
     Notice that the same $W$ and $b$ are used for all layers.
-    \item \textbf{Identity}, which simply sets the next embedding for a given node to be its aggregated neighbor embeddings. Mathematically, this is defined as:
-    $$
+    \item \textbf{Identity}, which simply sets the next embedding for a given node to be its aggregated neighbor embeddings. Mathematically, this is defined as
+    $
     h_u^{(l+1)} = n_u^{(l)} \text{ for } l \in 0, 1, ..., K - 1
-    $$
+    $.
 \end{itemize}
 
 \subsubsection{Final Node Representation} \label{final_node_representation}
@@ -271,20 +254,20 @@ For the Information Update module, we implemented three different algorithms:
 Four different choices of final node representation were chosen to be compared. Let $h_u^*$ be the final representation, then we can choose function $f$ such that $h_u^*=f(h_u^{(0)},h_u^{(1)},\hdots,h_u^{(K)})$.
 
 \begin{itemize}
-    \item \textbf{Concatenation}, which simply concatenates embeddings from all layers into a single embedding.
-    $$h_u^*=h_u^{(0)} \oplus h_u^{(1)} \oplus \cdots \oplus h_u^{(K)}$$
+    \item \textbf{Concatenation}, which simply concatenates embeddings from all layers into a single embedding:
+    $h_u^*=h_u^{(0)} \oplus h_u^{(1)} \oplus \cdots \oplus h_u^{(K)}$.
     This means that the number of dimensions of the embedding is multiplied by the number of layers $+1$, which can be very big. This is the approach used by NGCF \cite{ngcf}.
     \item \textbf{Mean}, which averages the embeddings from each layer instead of concatenating them. Mathematically, this is
-    $$h_u^*=\frac{1}{K+1}\sum_{l=0}^Kh_u^{(l)}$$
+    $h_u^*=\frac{1}{K+1}\sum_{l=0}^Kh_u^{(l)}$.
     This avoids the explosion in embedding dimensions, but risks losing some information in the process, as it is unclear whether such a simple combination of embeddings from different layers can produce a more meaningful embedding. This is the approach used by LightGCN \cite{lightgcn}.
     \item \textbf{Weighted Sum}, which is a weighted sum of the embeddings from each layer.
-    $$h_u^*=\sum_{l=0}^K\alpha^{(l)}h_u^{(l)}$$
+    $h_u^*=\sum_{l=0}^K\alpha^{(l)}h_u^{(l)}$
     where each $\alpha$ is a learnable parameter. This approach is mentioned in LightGCN \cite{lightgcn} but is not fully explored.
     
-    In practice we do not want the norm of the embeddings to explode, so we keep it as a \textit{convex} weighted sum by using a softmax over the alphas.
-    $$h_u^*=\frac{\sum_{l=0}^K (\exp(\alpha^{(l)})h_u^{(l)})}{\sum_{l=0}^K \exp(\alpha^{(l)})}$$
+    In practice we do not want the norm of the embeddings to explode, so we keep it as a \textit{convex} weighted sum by using a softmax over the alphas:
+    $h_u^*=\frac{\sum_{l=0}^K (\exp(\alpha^{(l)})h_u^{(l)})}{\sum_{l=0}^K \exp(\alpha^{(l)})}$.
     \item \textbf{Self-Attention}, which is a convex weighted sum of embeddings from each layer, except that the weights are computed through a self-attention mechanism. This attention is inspired by the mechanism used in the transformers architecture \cite{transformer}, and is different from graph attention used in neighborhood aggregation (Section \ref{neighborhood_aggregation}). Transformers define attention to be
-    $$\text{Attention}(Q,K,V)=\text{softmax}(\frac{QK^T}{\sqrt{d_k}})V$$
+    $\text{Attention}(Q,K,V)=\text{softmax}(\frac{QK^T}{\sqrt{d_k}})V$
     where $Q$ is a query vector, $K$ is a key vector, $V$ is a value vector, and $d_k$ is the dimensions of the $K$. The result is a convex combination of the value vectors, with weights determined by interactions between query and key vectors. Self-attention simply sets $Q=K=V$ to the embedding in question. We then employ a few modifications to this scheme to fit our use case.
     \begin{enumerate}
         \item This mechanism traditionally computes attention results for all $K+1$ embeddings to produce $K+1$ results. We only need one final result, so we choose to only use the first result and discard the rest.
@@ -388,35 +371,29 @@ To evaluate our GNNs and benchmark it against the baselines, we will compare the
 
 Note that different metrics may be better suited for different applications. For instance, MAP is a good metric when the order of the returned recommendation batch is not important whereas nDCG is preferable when we do care about the order. In fact, even for different recommendation stages inside a single application, different metrics may be better suited. Recall may be important for the initial retrieval stage while precision is more important for the final ranking stage. It's often helpful to examine multiple metrics together to understand the performance of a ranking algorithm holistically. Nevertheless, we place a higher emphasis on nDCG and MAP which is arguably the more well-rounded, end-to-end, ranking-specific metric out of the four.
 
-\subsection{Overall Top-Performing Architectures}
+\subsection{Overall Top-Performing Architectures} \label{sec:overall-architecture-results}
 
 We trained 2 (neighbor aggregation) * 3 (info update) * 4 (final node representation) * 10 (random seeds) = 240 GNNs with 50 epochs in total. The metrics of each network are averaged over the 10 random seeds. The full evaluation results can be found in Table \ref{tab:full-metrics} in the Appendix. 
 
-For each metric, we ranked the GNNs based on their performance and selected the best performing GNN out of all 240 GNNs. We then plotted all four metrics of these selected GNNs in Figure \ref{fig:metrics-overall}. We additionally plotted the metrics of the vanilla LightGCN and the best performing baselines (which happened to be SVD and kNN) as benchmarks for these top performing GNNs.
+For each metric, we ranked the GNNs based on their performance and selected the best-performing GNN out of all 24 GNNs averaged across 10 seeds. We then plotted all four metrics of these selected GNNs in Figure \ref{fig:metrics-overall}. We additionally plotted the metrics of the vanilla LightGCN and the best-performing baselines (which happened to be SVD and kNN) as benchmarks for these top-performing GNNs.
 % Out of all GNN configurations along with our baseline methods, we ordered them based on their performance in different metrics. Metrics of the top-performing GNNs in their own metrics category and other metrics, the vanilla LightGCN, and the best baselines SVD and kNN are plotted in Figure \ref{fig:metrics-overall}. 
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=.8\textwidth]{figs/best_models_and_baselines.png}
+    \includegraphics[width=.75\textwidth]{figs/best_models_and_baselines.png}
     \caption{Rank-based metrics of top-performing GNNs, LightGCN, and the best baselines.}
     \label{fig:metrics-overall}
 \end{figure}
 
-As discussed in section \ref{metrics}, we will prioritize nDCG@10 and MAP@10 in terms of analysis. Observe in Figure \ref{fig:metrics-overall} that the best-performing model for nDCG and MAP has attention as the neighbor aggregator, identity as the information updater, and attention as the final node representation. This model beats the vanilla LightGCN by 18.3\% in nDCG and 29.4\% in MAP, and beats the best baseline SVD by 90.5\% in nDCG and 175\% in MAP. Although the winning models for precision and recall are different than this one, our top-performing flavored models all beat the baseline SVD by a large margin and the vanilla LightGCN by a non-trivial margin. This shows that swapping vanilla GNN components out for more powerful ones indeed brings boosts in performance.
+In Figure \ref{fig:metrics-overall}, we observe that the best-performing model for nDCG and MAP has \textit{Attention} as the neighbor aggregator, \textit{Identity} as the information updater, and \textit{Attention} as the final node representation, which beats the vanilla LightGCN by 18.3\% in nDCG and 29.4\% in MAP, and beats the best baseline SVD by 90.5\% in nDCG and 175\% in MAP.
 
 \subsection{Individual Components} \label{eval-individual-components}
 
 \subsubsection{Evaluating One-at-a-Time} \label{eval-one-at-a-time}
 
-
-
 In addition to the overall best architectures, we are also interested in understanding the individual contributions of the algorithms in each of the three components in Section \ref{gnn-paradigm}. To this end, for each component, we plotted the rank-based metrics of the different algorithms while fixing the other two components to their simplest forms. For example, when evaluating the Neighbor Aggregation component, we fix the Information Update component to \textit{Identity} and the Final Node Representation component to \textit{Mean}. The results are shown in Figure \ref{fig:metrics-individual-components}.
 
-For neighbor aggregation, \textit{Attention} beats \textit{Degree Norm} by 6.2\% in precision, 4.2\% in recall, 7.1\% in nDCG, and 5.4\% in MAP.
-
-For information update, we see that \textit{Single Linear} performs the best in all four metrics. It beats \textit{Multiple Linear} and \textit{Identity} by 4.1\% and 18.0\% in precision, 4.2\% and 19.0\% in recall, 7.1\% and 20.4\% in nDCG, and 10.8\% and 32.6\% in MAP, respectively.
-
-For final node representation, ... (Hiroshi)
+For neighbor aggregation, \textit{Attention} beats \textit{Degree Norm} by 6.2\% in precision, 4.2\% in recall, 7.1\% in nDCG, and 5.4\% in MAP. For information update, we see that \textit{Single Linear} performs the best in all four metrics. It beats \textit{Multiple Linear} and \textit{Identity} by 4.1\% and 18.0\% in precision, 4.2\% and 19.0\% in recall, 7.1\% and 20.4\% in nDCG, and 10.8\% and 32.6\% in MAP, respectively. For final node representation, the vanilla \textit{Mean} surprisingly outperformed all other algorithms by a large margin. We will discuss this in section \ref{final-node-repr-discussion}.
 
 % \begin{figure}[H]
 %     % \centering
@@ -480,9 +457,9 @@ Table \ref{tab:components-avg-ranking} contains the results of ANR evaluated for
 % \textit{Analyze your model and results. Highlight a few limitations of your approach (e.g., strong assumptions you had to make, constraints, when your method did not work in practice, etc.). Do
 % the results and the explanation provide insights into the ML models or the environment that you were dealing with? Comment on whether you think there is a way to further improve your method to eliminate these limitations.}
 
-\subsection{GNN Paradigm: Analysis of the Individual Components}
+\subsection{GNN Architecture: Analysis of the Individual Components}
 
-In the sections below, we separately analyze the performance of the different algorithm in each of the four components of our GNN paradigm. We also discuss the limitations of each component and how they can be improved. Graph construction will be discussed separately.
+% In the sections below, we separately analyze the performance of the different algorithm in each of the four components of our GNN paradigm. We also discuss the limitations of each component and how they can be improved. Graph construction will be discussed separately.
 
 \subsubsection{Neighbor Aggregation}
 
@@ -506,19 +483,18 @@ There are two contrasting results that were obtained while testing different fin
 
 \subsubsection{A Note on Graph Construction}
 
-Although this was on our agenda, we ultimately abandoned this idea since it produced very bad results. Using \textit{degree norm}, \textit{identity}, and \textit{mean}, the raw bipartite obtained an NDCG of 0.15, while the augmented graph using genre features obtained an NDCG of 0.04, which is almost 4x worse. Other choices for the components produced results that were also worse, albeit not as extreme. We hypothesize that this is because the augmentations introduced edges that had effects opposite to what we would have liked. The bipartite graph facilitates collaborative filtering, where user and item embeddings are trained to be closer if they had similar interactions across different users and items. However by introducing genre nodes, movies of all types, no matter new or old, good or bad, become connected to each other, as long as they are within the same genre. Therefore many bad interactions that would not happen in reality will become 2-hop neighbors in the graph, causing bad interactions to be emphasized as much as good interactions, which could have caused the huge decline in collaborative filtering accuracy.
+Although this was on our agenda, we ultimately abandoned this idea since it produced very bad results. Using \textit{degree norm}, \textit{identity}, and \textit{mean}, the raw bipartite obtained an nDCG of 0.15, while the augmented graph using genre features obtained an nDCG of 0.04, which is almost 4x worse. Other choices for the components also produced bad results. We hypothesize that this is because the augmentations introduced counterproductive edges. The bipartite graph facilitates collaborative filtering, where user and item embeddings are trained to be closer if they had similar interactions across different users and items. However by introducing genre nodes, movies of all types, no matter new or old, good or bad, become connected to each other, as long as they are within the same genre. Therefore many bad interactions that would not happen in reality will become 2-hop neighbors in the graph, which could have caused the huge decline in collaborative filtering accuracy.
 
-\subsection{Overall Best-Performing Architectures}
+\subsection{Analysis of the Overall Best-Performing Architectures} \label{sec:analysis_overall}
 
+As discussed in section \ref{metrics}, we will prioritize analyzing nDCG@10 and MAP@10 when comparing the models. Recall from Section \ref{sec:overall-architecture-results} that the best combination of our component algorithms beats the original LightGCN model by 18.3\% in nDCG and 29.4\% in MAP, which is a rather significant improvement. This result stands in contrast to the claims made by the original LightGCN paper \cite{lightgcn}, which argues that the performance of simple GCNs such as LightGCN is already very competitive and there is little room for improvement from adding more complex Neighbor Aggregation, Information Update, and Final Node Representation algorithms. Our experiments demonstrate that this is not the case, and more sophisticated non-linear transformation such as \textit{Attention} neighbor aggregation can indeed still bring non-trivial improvements to LightGCN on even simple datasets such as Movielens100k.
 
 \subsection{Limitations and Future Work}
 
-% While we have exciting discoveries, we see some mixed messages that leave us pondering.
-
-While our results <fill in the central msg of our report>, we do want to note two limitations in our methods:
+While our results have shown that component algorithms are capable of improving LightGCN, we do want to note two limitations in our evaluation methods:
 
 \begin{itemize}
-    \item \textbf{Small Dataset}: The Movielens100k dataset used in our experiments is relatively small and could be considered "too easy" for GNNs. To truly benchmark the capabilities of these complex models, we should try larger and more challenging datasets, such as the Movielens 1M dataset and other click-based datasets such as \href{http://jmcauley.ucsd.edu/data/amazon/links.html}{Amazon} and \href{https://www.yelp.com/dataset}{Yelp}. These more difficult datasets also provide additional node features for users and items that GNNs can leverage, which is not present in the Movielens100k dataset.
+    \item \textbf{Small Dataset}: As noted in Section \ref{sec:analysis_overall}, the Movielens100k dataset that we used is a rather small dataset. Although our component algorithms have already been able to create a performance gap between our GNNs and LightGCN, we should expect this performance gap to be even more significant on larger datasets such as Movielens1M and other click-based datasets like \href{http://jmcauley.ucsd.edu/data/amazon/links.html}{Amazon} and \href{https://www.yelp.com/dataset}{Yelp}, where the simple LightGCN model will be more prone to underfitting. These more complicated datasets also provide additional node features for users and items, which are not present in the Movielens100k dataset, that our component and graph construction algorithms can leverage.
     \item \textbf{Overfitting}: In our experiments, we fixed all GNNs to train for 50 epochs. Since the MovieLens100K dataset is small, some of our more complex GNNs have shown signs of overfitting. For example, we observed that the performance of the "\textit{Attention Aggregator} + \textit{Multiple Linear} + \textit{Attention Representation}" architecture started decreasing after 30 epochs. To address this issue, we should either add some regularization mechanism (e.g. dropout layers) to our GNNs or implement early stopping during training to prevent overfitting. Unfortunately, we did not have time to implement these techniques and re-run the experiments in this project.
     % \item 
     % \item do not quite understand the interaction between components. in average normed ranking, we see high variance, and the best performing algos for each component combined does not produce the best result. should explore this aspect.
@@ -553,38 +529,6 @@ The code to train, plot, and analyze the models is published at the \href{https:
 \section{Appendix}
 
 
-\subsection{Rank-based Metrics Definitions} \label{rank-metrics-def}
-
-\subsubsection{Precision @ K}
-
-For a given user $u$, Precision @ K measures the fraction of the top K items recommended by the model that are relevant to the user. Mathematically, it is defined as \cite{survey}:
-$$
-\mbox{Precision@K}(u) = \frac{| R^K(u) \cap T(u) |}{K}
-$$
-where $R^K(u)$ is the set of top K items ranked by the model for user $u$, and $T(u)$ is the ground truth set of top K items for user $u$. If we do not specify the user $u$, then we are referring to the average Precision @ K across all users, i.e. $\mbox{Precision@K} = \frac{1}{M} \sum_{u = 1}^M \mbox{Precision@K(u)}$.
-
-\subsubsection{Recall @ K}
-
-Recall @ K measures the fraction of the top K items recommended by the model that are in the ground truth set of top K items for the user. Mathematically, it is defined as \cite{survey}:
-$$
-\mbox{Recall@K}(u) = \frac{| R^K(u) \cap T(u) |}{|T(u)|}
-$$
-Similarly, if we do not specify the user $u$, then we are referring to the average Recall @ K across all users, i.e. $\mbox{Recall@K} = \frac{1}{M} \sum_{u = 1}^M \mbox{Recall@K(u)}$.
-
-\subsubsection{Normalized Discounted Cumulative Gain (nDCG) @ K}
-
-Normalized Discounted Cumulative Gain (nDCG) @ K measures the ranking quality of the top K recommended items by differentiating the contributions of correctly recommended items based on their ranking positions. Mathematically, it is defined as \cite{survey}:
-$$
-\mbox{nDCG@K} = \frac{1}{M} \sum_{u = 1}^M \frac{\sum_{k = 1}^K \frac{I(R^K_k(u) \in T(u))}{\log(k + 1)}}{\sum_{k = 1}^K \frac{1}{ \log(k + 1)}}
-$$
-where $I(\cdot)$ is the indicator function, $R^K_k(u)$ is the $k$th item in the top K items ranked by the model for user $u$, and $T(u)$ is the ground truth set of top K items for user $u$. The denominator is the ideal DCG score if the top K items are perfectly ranked by the model.
-
-\subsubsection{Mean Average Precision (MAP) @ K}
-
-Mean Average Precision (MAP) @ K is the average of the Precision @ K across all users for multiple queries. Mathematically, it is defined as \cite{survey}:
-$$
-\mbox{MAP@K} = \frac{1}{M} \sum_{u = 1}^M \sum_{k = 1}^K \frac{I(R^K_k(u) \in T(u)) \mbox{Precision@K}(u)}{K}
-$$
 
 
 \subsection{Additional Baseline Evaluations} \label{additional-baseline-eval}
@@ -707,6 +651,66 @@ $$
 %     \caption{A visualization of the results from Table \ref{tab:lightgcn-100k-results}.}
 %     \label{fig:lightgcn-100k-eval}
 % \end{figure}
+
+\subsection{GNN Architecture}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.6\textwidth]{figs/ngcf-architecture.png}
+    \caption{An illustration of the user-item interaction graph and the high-order connectivity by \cite{ngcf}. The figure visualizes how the embeddings for user $u_1$ are propagated through the graph.}
+    \label{fig:user-item-interact-graph}
+\end{figure}
+
+\subsection{Vectorized Neighbor Aggregation with Degree Normalization} \label{vec-degree-norm}
+
+Let $R \in \mathbb{R}^{m \times n}$ denote the interaction matrix where $R_{ui}$ is 1 if user $u$ has a rating for movie $i$ and 0 otherwise. Here $m$ and $n$ are the number of users and movies respectively. Then, the adjacency matrix of the bipartite user-movie interaction graph can be written as
+    \begin{align*}
+        A =
+        \begin{pmatrix}
+        \mathbf{0} & R \\
+        R^\top & \mathbf{0}
+        \end{pmatrix}
+    \end{align*}
+    Treating this as a classical matrix factorization problem, we arrive at the closed form solution of the aggregation representation:
+    \begin{align*}
+        N^{(l+1)} = \left( D^{-\frac{1}{2}} A D^{-\frac{1}{2}} \right) H^{(l)} \text{ for } l \in 0, 1, \hdot, K - 1
+    \end{align*}
+    where $D \in \mathbb{R}^{(m+n) \times (m+n)}$ is a diagonal matrix such that the $i$th diagonal entry denotes the number of non-zero entries in the $i$th row of $A$.
+
+
+\subsection{Rank-based Metrics Definitions} \label{rank-metrics-def}
+
+\subsubsection{Precision @ K}
+
+For a given user $u$, Precision @ K measures the fraction of the top K items recommended by the model that are relevant to the user. Mathematically, it is defined as \cite{survey}:
+$$
+\mbox{Precision@K}(u) = \frac{| R^K(u) \cap T(u) |}{K}
+$$
+where $R^K(u)$ is the set of top K items ranked by the model for user $u$, and $T(u)$ is the ground truth set of top K items for user $u$. If we do not specify the user $u$, then we are referring to the average Precision @ K across all users, i.e. $\mbox{Precision@K} = \frac{1}{M} \sum_{u = 1}^M \mbox{Precision@K(u)}$.
+
+\subsubsection{Recall @ K}
+
+Recall @ K measures the fraction of the top K items recommended by the model that are in the ground truth set of top K items for the user. Mathematically, it is defined as \cite{survey}:
+$$
+\mbox{Recall@K}(u) = \frac{| R^K(u) \cap T(u) |}{|T(u)|}
+$$
+Similarly, if we do not specify the user $u$, then we are referring to the average Recall @ K across all users, i.e. $\mbox{Recall@K} = \frac{1}{M} \sum_{u = 1}^M \mbox{Recall@K(u)}$.
+
+\subsubsection{Normalized Discounted Cumulative Gain (nDCG) @ K}
+
+Normalized Discounted Cumulative Gain (nDCG) @ K measures the ranking quality of the top K recommended items by differentiating the contributions of correctly recommended items based on their ranking positions. Mathematically, it is defined as \cite{survey}:
+$$
+\mbox{nDCG@K} = \frac{1}{M} \sum_{u = 1}^M \frac{\sum_{k = 1}^K \frac{I(R^K_k(u) \in T(u))}{\log(k + 1)}}{\sum_{k = 1}^K \frac{1}{ \log(k + 1)}}
+$$
+where $I(\cdot)$ is the indicator function, $R^K_k(u)$ is the $k$th item in the top K items ranked by the model for user $u$, and $T(u)$ is the ground truth set of top K items for user $u$. The denominator is the ideal DCG score if the top K items are perfectly ranked by the model.
+
+\subsubsection{Mean Average Precision (MAP) @ K}
+
+Mean Average Precision (MAP) @ K is the average of the Precision @ K across all users for multiple queries. Mathematically, it is defined as \cite{survey}:
+$$
+\mbox{MAP@K} = \frac{1}{M} \sum_{u = 1}^M \sum_{k = 1}^K \frac{I(R^K_k(u) \in T(u)) \mbox{Precision@K}(u)}{K}
+$$
+
 
 
 \subsection{Additional GNN Evaluations} \label{additional-gnn-eval}
